@@ -1,0 +1,358 @@
+
+:root {
+    --bs-primary: #FB6F92;
+    --bs-primary-rgb: 251, 111, 146;
+    --bs-secondary: #FF8FAB;
+    --bs-success: #28a745;
+    --bs-info: #FF8FAB;
+    --bs-warning: #f3a712;
+    --bs-danger: #dc3545;
+
+    --theme-primary: #FB6F92;
+    --theme-secondary: #FF8FAB;
+    --theme-accent: #FFB3C6;
+    --theme-background: #FFE5EC;
+    --theme-light-accent: #FFC2D1;
+    --theme-text: #5a3d4a;
+
+    --link-color: #8f2f55;
+    --link-hover: #FB6F92;
+}
+
+body {
+    background-color: var(--theme-background);
+    color: var(--theme-text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.login-page {
+    background: linear-gradient(135deg, var(--theme-background), var(--theme-accent));
+    min-height: 100vh;
+}
+
+.login-card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.login-card .card-header {
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))
+    !important;
+    border-bottom: none;
+}
+
+.login-card .form-control {
+    border-color: var(--theme-light-accent);
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.login-card .form-control:focus {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 0.2rem rgba(251, 111, 146, 0.25);
+}
+
+.login-card .btn-primary {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.login-card .btn-primary:hover {
+    background-color: #e85a7a;
+    border-color: #e85a7a;
+}
+
+.sidebar {
+    background-color: #FFE5EC;
+    border-right: 1px solid rgba(0, 0, 0, 0.01);
+    box-shadow: 2px 0 5px rgba(247, 94, 165, 0.39);
+}
+.sidebar .nav-link {
+    color: var(--theme-text);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 4px;
+    transition: all 0.3s ease;
+}
+.sidebar .nav-link:hover {
+    background-color: var(--theme-light-accent);
+    color: var(--theme-primary);
+}
+.sidebar .nav-link.active {
+    background-color: var(--theme-primary);
+    color: #fff;
+}
+
+.stat-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+.stat-card .card-body { padding: 1.5rem; }
+.stat-card .card-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+.stat-card .card-text {
+    font-size: 1.8rem;
+    margin-bottom: 0;
+}
+
+.shadow-hover { transition: box-shadow 0.3s ease; }
+.shadow-hover:hover { box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important; }
+
+.border-accent { border-left: 4px solid var(--theme-accent); }
+.border-primary-custom { border-left: 4px solid var(--theme-primary); }
+.border-success-custom { border-left: 4px solid var(--bs-success); }
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+}
+
+.text-accent { color: var(--theme-accent); }
+.text-primary-custom { color: var(--theme-primary); }
+
+.btn-primary {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+}
+.btn-primary:hover {
+    background-color: #e85a7a;
+    border-color: #e85a7a;
+}
+
+.form-select, .form-control {
+    border-color: var(--theme-light-accent);
+    border-radius: 8px;
+}
+.form-select:focus, .form-control:focus {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 0.2rem rgba(251, 111, 146, 0.25);
+}
+
+.badge {
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: var(--theme-secondary); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--theme-primary); }
+
+
+
+/* ============================================
+   LARAVEL / BREEZE ADDITIONS
+   ============================================ */
+
+.min-h-screen {
+    background: linear-gradient(135deg, var(--theme-background), var(--theme-accent));
+}
+
+button[type="submit"] {
+    background-color: var(--theme-primary);
+    color: #fff;
+    border-radius: 8px;
+    border: none;
+}
+button[type="submit"]:hover {
+    background-color: #e85a7a;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    border: 1px solid var(--theme-light-accent);
+    border-radius: 8px;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 0.2rem rgba(251, 111, 146, 0.25);
+    outline: none;
+}
+
+a {
+    color: var(--theme-primary);
+}
+a:hover {
+    color: #e85a7a;
+}
+
+/* ============================================
+   LAB 5 ADDITIONS (carried over from Lab 4)
+   ============================================ */
+
+#rosterTable { font-size: 0.95rem; }
+#rosterTable thead th {
+    background-color: var(--theme-light-accent);
+    border-bottom: 2px solid var(--theme-primary);
+    font-weight: 600;
+}
+#rosterTable tbody tr:hover { background-color: var(--theme-background); }
+
+#alertsList { max-height: 300px; overflow-y: auto; }
+#alertsList .alert {
+    border-left: 4px solid rgba(255,255,255,0.5);
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.activity-scroll { max-height: 320px; overflow-y: auto; }
+.activity-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #fff;
+    box-shadow: 0 1px 0 #dee2e6;
+}
+
+.card-body canvas { max-height: 260px; width: 100% !important; }
+
+#notificationToast .toast {
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    min-width: 300px;
+}
+
+.pagination .page-link { color: var(--theme-primary); border-color: var(--theme-light-accent); }
+.pagination .page-item.active .page-link {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .sidebar { min-height: auto !important; height: auto !important; }
+    .stat-card .card-text { font-size: 1.4rem; }
+    .card-body canvas { max-height: 220px; }
+}
+
+/* Lab 6: number flash when the dashboard updates */
+.flash-update {
+    color: #d6456a !important;
+    text-shadow: 0 0 10px rgba(251, 111, 146, 0.6);
+    transition: all 0.3s ease;
+}
+
+.dropdown-menu .dropdown-item.text-wrap { white-space: normal; }
+
+/* =====================================================
+   LAB 6: NAVBAR DROPDOWNS (bell + user menu)
+   ===================================================== */
+.navbar .dropdown-menu {
+    background-color: #fff;
+    border: 1px solid var(--theme-light-accent);
+    border-radius: 12px;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+/* Undo the pink button styling inside dropdowns */
+.navbar .dropdown-menu .dropdown-item {
+    background: transparent !important;
+    color: #212529 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    width: 100%;
+    text-align: left;
+    padding: 0.85rem 1.25rem !important;
+    white-space: normal;
+}
+.navbar .dropdown-menu .dropdown-item:hover,
+.navbar .dropdown-menu .dropdown-item:focus {
+    background-color: var(--theme-background) !important;
+}
+.navbar .dropdown-menu .dropdown-item.text-danger { color: #dc3545 !important; }
+
+/* Notification list */
+.notif-menu { min-width: 340px; }
+.notif-header { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--theme-light-accent); }
+
+.notif-mark-all {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: var(--theme-primary) !important;
+    padding: 0 !important;
+    font-size: 0.85rem;
+    text-decoration: underline;
+}
+
+.navbar .dropdown-menu .dropdown-item.notif-item {
+    border-top: 1px solid #f4e4ea !important;
+}
+.navbar .dropdown-menu .dropdown-item.notif-item.notif-unread {
+    background-color: #fff3f7 !important;
+    border-left: 4px solid var(--theme-primary) !important;
+}
+.navbar .dropdown-menu .dropdown-item.notif-unread:hover {
+    background-color: #ffe3ec !important;
+}
+.notif-text { font-size: 0.9rem; line-height: 1.35; }
+.notif-unread .notif-text { font-weight: 600; }
+.notif-time { color: #6c757d; }
+
+/* =====================================================
+   LAB 6: MOBILE
+   ===================================================== */
+@media (max-width: 767.98px) {
+    main h2 { font-size: 1.4rem; }
+    .card-body { padding: 0.85rem; }
+    .table { font-size: 0.85rem; }
+    .table > :not(caption) > * > * { padding: 0.5rem; }
+    .pagination { flex-wrap: wrap; justify-content: center; }
+    #notificationToast .toast { min-width: 0; max-width: calc(100vw - 2rem); }
+
+    /* Sidebar becomes a horizontal, swipeable menu */
+    .sidebar { padding: 0.5rem !important; min-height: auto !important; }
+    .sidebar .nav.flex-column {
+        flex-direction: row !important;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 0.25rem;
+    }
+    .sidebar .nav-item { flex: 0 0 auto; margin: 0 !important; }
+    .sidebar .nav-link { white-space: nowrap; padding: 0.5rem 0.85rem; }
+}
+
+@media (max-width: 575.98px) {
+    /* Notification panel spans the phone screen instead of overflowing it */
+    .notif-menu {
+        position: fixed !important;
+        inset: 58px 10px auto 10px !important;
+        width: auto !important;
+        min-width: 0 !important;
+        transform: none !important;
+    }
+}
+
+.table a:not(.btn) {
+    color: var(--link-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+
+.table a:not(.btn):hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
