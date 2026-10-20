@@ -77,7 +77,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse flex-grow-0 ms-lg-auto" id="navbarNav">
+            <div class="collapse navbar-collapse flex-grow-0 {{ Auth::user()->is_admin ? '' : 'ms-lg-auto' }}" id="navbarNav">
                 <ul class="navbar-nav align-items-lg-center">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
