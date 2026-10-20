@@ -16,6 +16,13 @@ class DatabaseSeeder extends Seeder
         );
         $admin->forceFill(['is_admin' => true])->save();
 
+        // Normal test user (Lab 5 features only)
+        $test = User::updateOrCreate(
+            ['email' => 'test@example.com'],
+            ['name' => 'John Doe', 'password' => 'password123']
+        );
+        $test->forceFill(['is_admin' => false])->save();
+
         $this->call([
             CourseSeeder::class,
             StudentSeeder::class,

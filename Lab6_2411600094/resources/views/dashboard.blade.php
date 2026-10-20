@@ -3,13 +3,14 @@
 @section('title', 'Dashboard')
 
 @section('content')
-
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-2 mb-3 border-bottom">
         <h2 id="greeting" class="fw-bold mb-0">Dashboard</h2>
-        <small class="text-muted">
-            <i class="bi bi-arrow-repeat me-1"></i>Last updated: <span id="lastUpdated">—</span>
-            <span id="pollStatus" class="text-danger ms-2"></span>
-        </small>
+        @if(Auth::user()->is_admin)
+            <small class="text-muted">
+                <i class="bi bi-arrow-repeat me-1"></i>Last updated: <span id="lastUpdated">—</span>
+                <span id="pollStatus" class="text-danger ms-2"></span>
+            </small>
+        @endif
     </div>
 
     {{-- ===== STAT CARDS (same four as Lab 4) ===== --}}
@@ -70,7 +71,7 @@
                 <div class="card-body" id="alertsList">
                     @forelse($flaggedStudents as $student)
                         <div class="alert {{ $student->isOnProbation() ? 'bg-danger text-white' : 'bg-warning text-dark' }}
-                                                            alert-dismissible fade show d-flex align-items-center mb-2"
+                                                                    alert-dismissible fade show d-flex align-items-center mb-2"
                             role="alert">
                             <i
                                 class="bi {{ $student->isOnProbation() ? 'bi-exclamation-octagon-fill' : 'bi-exclamation-triangle-fill' }} me-3 fs-4"></i>
@@ -96,6 +97,7 @@
     </div>
 
     {{-- ===== LIVE: Heavy Backlog + Recent Transactions (updated by AJAX) ===== --}}
+    @if(Auth::user()->is_admin)
     <div class="row mb-4">
         <div class="col-lg-5 mb-4">
             <div class="card shadow-hover h-100">
@@ -138,6 +140,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- ===== CHARTS ROW 1 ===== --}}
     <div class="row mb-4">
@@ -376,7 +379,7 @@
             }
         });
     </script>
-
+@if(Auth::user()->is_admin)
     <script>
         window.RT = {
             stats: "{{ route('api.stats') }}",
@@ -385,5 +388,5 @@
         };
     </script>
     <script src="{{ asset('js/dashboard-realtime.js') }}"></script>
-
+@endif
 @endsection

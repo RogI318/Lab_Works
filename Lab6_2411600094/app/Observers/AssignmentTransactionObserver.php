@@ -46,7 +46,7 @@ class AssignmentTransactionObserver
             // Only notify when the limit is CROSSED (prevents duplicate alerts
             // while the student is already in Heavy Backlog).
             if ($before < Student::BACKLOG_LIMIT && $after >= Student::BACKLOG_LIMIT) {
-                Notification::send(User::all(), new HeavyBacklogNotification($student));
+                Notification::send(User::where('is_admin', true)->get(), new HeavyBacklogNotification($student));
             }
         });
     }

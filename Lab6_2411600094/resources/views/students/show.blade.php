@@ -94,6 +94,7 @@
     </div>
 
     {{-- ===== Assignment Transaction History (with running balance) ===== --}}
+    @if(Auth::user()->is_admin)
     <div class="card shadow-hover mb-4">
         <div
             class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -159,6 +160,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- Recent activity of this student --}}
     <div class="card shadow-hover mb-4">

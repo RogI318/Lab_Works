@@ -17,64 +17,68 @@
 <body>
 
     <!-- ===== Navbar ===== -->
-    @php
-        $unreadCount = Auth::user()->unreadNotifications()->count();
-        $recentNotifications = Auth::user()->notifications()->latest()->take(5)->get();
-    @endphp
+    @if(Auth::user()->is_admin)
+        @php
+            $unreadCount = Auth::user()->unreadNotifications()->count();
+            $recentNotifications = Auth::user()->notifications()->latest()->take(5)->get();
+        @endphp
+    @endif
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">Student Portal</a>
 
-            {{-- Notification bell (outside the collapse so it is always visible on phones) --}}
-            <div class="dropdown ms-auto me-2 me-lg-3">
-                <a class="nav-link position-relative text-white px-2" href="#" id="bellDropdown" role="button"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-bell-fill fs-5"></i>
-                    <span id="bellCount"
-                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $unreadCount ? '' : 'd-none' }}">{{ $unreadCount }}</span>
-                </a>
+            @if(Auth::user()->is_admin)
+                {{-- Notification bell (admin only) --}}
+                <div class="dropdown ms-auto me-2 me-lg-3">
+                    <a class="nav-link position-relative text-white px-2" href="#" id="bellDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-bell-fill fs-5"></i>
+                        <span id="bellCount"
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $unreadCount ? '' : 'd-none' }}">{{ $unreadCount }}</span>
+                    </a>
 
-                <ul class="dropdown-menu dropdown-menu-end notif-menu shadow" aria-labelledby="bellDropdown">
-                    <li class="notif-header d-flex justify-content-between align-items-center">
-                        <strong>Notifications</strong>
-                        @if($unreadCount)
-                            <form method="POST" action="{{ route('notifications.readAll') }}">
-                                @csrf
-                                <button class="notif-mark-all" type="submit">Mark all as read</button>
-                            </form>
-                        @endif
-                    </li>
-
-                    @forelse($recentNotifications as $n)
-                        <li>
-                            <form method="POST" action="{{ route('notifications.read', $n->id) }}">
-                                @csrf
-                                <button type="submit"
-                                    class="dropdown-item notif-item {{ $n->read_at ? '' : 'notif-unread' }}">
-                                    <div class="d-flex gap-2">
-                                        <i class="bi bi-exclamation-triangle-fill text-warning mt-1"></i>
-                                        <div>
-                                            <div class="notif-text">{{ $n->data['message'] ?? 'Notification' }}</div>
-                                            <small class="notif-time">{{ $n->created_at->diffForHumans() }}</small>
-                                        </div>
-                                    </div>
-                                </button>
-                            </form>
+                    <ul class="dropdown-menu dropdown-menu-end notif-menu shadow" aria-labelledby="bellDropdown">
+                        <li class="notif-header d-flex justify-content-between align-items-center">
+                            <strong>Notifications</strong>
+                            @if($unreadCount)
+                                <form method="POST" action="{{ route('notifications.readAll') }}">
+                                    @csrf
+                                    <button class="notif-mark-all" type="submit">Mark all as read</button>
+                                </form>
+                            @endif
                         </li>
-                    @empty
-                        <li class="px-3 py-4 text-center text-muted small">No notifications yet.</li>
-                    @endforelse
-                </ul>
-            </div>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        @forelse($recentNotifications as $n)
+                            <li>
+                                <form method="POST" action="{{ route('notifications.read', $n->id) }}">
+                                    @csrf
+                                    <button type="submit"
+                                        class="dropdown-item notif-item {{ $n->read_at ? '' : 'notif-unread' }}">
+                                        <div class="d-flex gap-2">
+                                            <i class="bi bi-exclamation-triangle-fill text-warning mt-1"></i>
+                                            <div>
+                                                <div class="notif-text">{{ $n->data['message'] ?? 'Notification' }}</div>
+                                                <small class="notif-time">{{ $n->created_at->diffForHumans() }}</small>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </form>
+                            </li>
+                        @empty
+                            <li class="px-3 py-4 text-center text-muted small">No notifications yet.</li>
+                        @endforelse
+                    </ul>
+                </div>
+            @endif
+
+            <button class="navbar-toggler {{ Auth::user()->is_admin ? '' : 'ms-auto' }}" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse flex-grow-0" id="navbarNav">
+            <div class="collapse navbar-collapse flex-grow-0 ms-lg-auto" id="navbarNav">
                 <ul class="navbar-nav align-items-lg-center">
-                    {{-- User dropdown with logout --}}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
@@ -115,14 +119,16 @@
                             <a class="nav-link {{ request()->routeIs('courses.*') ? 'active' : '' }}"
                                 href="{{ route('courses.index') }}">Courses</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('assignments.*') ? 'active' : '' }}"
-                                href="{{ route('assignments.index') }}">Assignments</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
-                                href="{{ route('reports.index') }}">Reports</a>
-                        </li>
+                        @if(Auth::user()->is_admin)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('assignments.*') ? 'active' : '' }}"
+                                    href="{{ route('assignments.index') }}">Assignments</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+                                    href="{{ route('reports.index') }}">Reports</a>
+                            </li>
+                        @endif
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
                                 href="{{ route('profile.edit') }}">Profile</a>
