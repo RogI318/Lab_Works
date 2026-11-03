@@ -77,7 +77,8 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse flex-grow-0 {{ Auth::user()->is_admin ? '' : 'ms-lg-auto' }}" id="navbarNav">
+            <div class="collapse navbar-collapse flex-grow-0 {{ Auth::user()->is_admin ? '' : 'ms-lg-auto' }}"
+                id="navbarNav">
                 <ul class="navbar-nav align-items-lg-center">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
@@ -123,6 +124,11 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('assignments.*') ? 'active' : '' }}"
                                     href="{{ route('assignments.index') }}">Assignments</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('interventions.*') ? 'active' : '' }}"
+                                    href="{{ route('interventions.index') }}">Academic Interventions</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
