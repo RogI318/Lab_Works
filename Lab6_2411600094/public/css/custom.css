@@ -355,3 +355,12 @@ a:hover {
     color: var(--link-hover);
     text-decoration: underline;
 }
+
+.stat-card .card-title {
+    font-size: 0.95rem;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+@media (max-width: 991.98px) {
+    .stat-card .card-title { font-size: 0.78rem; }
+}
