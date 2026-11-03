@@ -8,6 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use App\Mail\AcademicInterventionCreated;
+use App\Mail\AcademicInterventionApproved;
+use Illuminate\Support\Facades\Mail;
+use App\Models\User;
 
 class AcademicInterventionController extends Controller
 {
@@ -74,6 +78,15 @@ class AcademicInterventionController extends Controller
         return redirect()
             ->route('interventions.index')
             ->with('success', 'Academic intervention created successfully.');
+
+        $admin =User::where('is_admin', true)
+        ->whereNotNull('email')
+        ->get();
+
+        foreach ($admin as $admin){
+            Mail::to($admin->email)
+            ->send(new AcademicInterventionCreated($intervention));
+        }
     }
 
     public function show(AcademicIntervention $intervention)
@@ -168,6 +181,17 @@ class AcademicInterventionController extends Controller
             'success',
             'Academic intervention approved successfully.'
         );
+
+        $intervention->load('student');
+
+        $admins = User::where('is_admin', true)
+            ->whereNotNull('email')
+            ->get();
+
+        foreach ($admins as $admin) {
+            Mail::to($admin->email)
+                ->send(new AcademicInterventionApproved($intervention));
+        }
     }
 
     public function reject(
