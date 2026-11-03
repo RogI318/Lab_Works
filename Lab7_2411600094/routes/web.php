@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Controllers\AcademicInterventionController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -27,7 +28,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Courses
     Route::resource('courses', CourseController::class)->except('show');
 
-           // ================= ADMIN ONLY (Lab 6 features) =================
+    // ================= ADMIN ONLY (Lab 6 features) =================
     Route::middleware(EnsureUserIsAdmin::class)->group(function () {
 
         // adjust routes MUST come before the resource route
@@ -51,6 +52,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/students/{student}/backlog', [RealtimeController::class, 'studentBacklog'])->name('student-backlog');
             Route::get('/transactions/recent', [RealtimeController::class, 'recentTransactions'])->name('recent');
         });
+
+        // Academic Intervention Management
+
+        Route::resource('interventions', AcademicInterventionController::class);
+
+        Route::post(
+            '/interventions/{intervention}/approve',
+            [AcademicInterventionController::class, 'approve']
+        )->name('interventions.approve');
+
+        Route::post(
+            '/interventions/{intervention}/reject',
+            [AcademicInterventionController::class, 'reject']
+        )->name('interventions.reject');
+
+        Route::post(
+            '/interventions/{intervention}/complete',
+            [AcademicInterventionController::class, 'complete']
+        )->name('interventions.complete');
+
+        Route::post(
+            '/interventions/{id}/restore',
+            [AcademicInterventionController::class, 'restore']
+        )->name('interventions.restore');
     });
 
     // Reports
@@ -68,11 +93,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/students/{student}/backlog', [RealtimeController::class, 'studentBacklog'])->name('student-backlog');
         Route::get('/transactions/recent', [RealtimeController::class, 'recentTransactions'])->name('recent');
     });
-    
+
     // Profile (Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
