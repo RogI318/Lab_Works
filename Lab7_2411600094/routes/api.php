@@ -1,16 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AcademicDashboardController;
 
-Route::middleware(['auth:sanctum', 'admin-only'])->group(function () {
-
-    Route::get('/dashboard/stats', [AcademicDashboardController::class, 'stats']);
-
-    Route::get('/students/heavy-backlog', [AcademicDashboardController::class, 'heavyBacklogStudents']);
-
-    Route::get('/interventions/recent', [AcademicDashboardController::class, 'recentInterventions']);
-
-    Route::get('/interventions/summary', [AcademicDashboardController::class, 'interventionSummary']);
-
-});
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+| The Lab 7 academic JSON endpoints live in routes/web.php (admin group,
+| /api prefix) so they use your normal login session.
+*/
