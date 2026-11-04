@@ -13,7 +13,64 @@
         @endif
     </div>
 
-    {{-- ===== STAT CARDS (same four as Lab 4) ===== --}}
+
+    <div class="row mb-4">
+
+        <!-- Heavy Backlog Students -->
+        <div class="col-md-6 col-xl-3 mb-3">
+            <div class="card border-start border-danger border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Heavy Backlog Students</h6>
+                    <h2 class="fw-bold text-danger">
+                        {{ $heavyBacklogCount }}
+                    </h2>
+                    <small class="text-muted">Students requiring attention</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Interventions -->
+        <div class="col-md-6 col-xl-3 mb-3">
+            <div class="card border-start border-warning border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Pending Interventions</h6>
+                    <h2 class="fw-bold text-warning">
+                        {{ $pendingInterventionCount }}
+                    </h2>
+                    <small class="text-muted">Awaiting approval</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Interventions -->
+        <div class="col-md-6 col-xl-3 mb-3">
+            <div class="card border-start border-success border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Approved Interventions</h6>
+                    <h2 class="fw-bold text-success">
+                        {{ $approvedInterventionCount }}
+                    </h2>
+                    <small class="text-muted">Approved academic interventions</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Interventions -->
+        <div class="col-md-6 col-xl-3 mb-3">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Interventions</h6>
+                    <h2 class="fw-bold text-primary">
+                        {{ $totalInterventionCount }}
+                    </h2>
+                    <small class="text-muted">All recorded interventions</small>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- ===== STAT CARDS ===== --}}
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
             <div class="card stat-card text-center shadow-hover border-accent">
@@ -71,7 +128,7 @@
                 <div class="card-body" id="alertsList">
                     @forelse($flaggedStudents as $student)
                         <div class="alert {{ $student->isOnProbation() ? 'bg-danger text-white' : 'bg-warning text-dark' }}
-                                                                    alert-dismissible fade show d-flex align-items-center mb-2"
+                                                                                            alert-dismissible fade show d-flex align-items-center mb-2"
                             role="alert">
                             <i
                                 class="bi {{ $student->isOnProbation() ? 'bi-exclamation-octagon-fill' : 'bi-exclamation-triangle-fill' }} me-3 fs-4"></i>
@@ -98,48 +155,48 @@
 
     {{-- ===== LIVE: Heavy Backlog + Recent Transactions (updated by AJAX) ===== --}}
     @if(Auth::user()->is_admin)
-    <div class="row mb-4">
-        <div class="col-lg-5 mb-4">
-            <div class="card shadow-hover h-100">
-                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Heavy Backlog Alerts</h5>
-                    <span class="badge bg-light text-dark" id="heavyCount">0</span>
-                </div>
-                <div class="card-body" id="heavyBacklogList" style="max-height: 320px; overflow-y: auto;">
-                    <p class="text-muted text-center mb-0">Loading…</p>
+        <div class="row mb-4">
+            <div class="col-lg-5 mb-4">
+                <div class="card shadow-hover h-100">
+                    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Heavy Backlog Alerts</h5>
+                        <span class="badge bg-light text-dark" id="heavyCount">0</span>
+                    </div>
+                    <div class="card-body" id="heavyBacklogList" style="max-height: 320px; overflow-y: auto;">
+                        <p class="text-muted text-center mb-0">Loading…</p>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-7 mb-4">
-            <div class="card shadow-hover h-100">
-                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Recent Assignment Transactions</h5>
-                    <a href="{{ route('assignments.index') }}" class="btn btn-sm btn-light">View All</a>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive activity-scroll">
-                        <table class="table table-striped table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Student</th>
-                                    <th>Type</th>
-                                    <th>Qty</th>
-                                    <th>Reference</th>
-                                    <th>By</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentTransactionsBody">
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted">Loading…</td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="col-lg-7 mb-4">
+                <div class="card shadow-hover h-100">
+                    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Assignment Transactions</h5>
+                        <a href="{{ route('assignments.index') }}" class="btn btn-sm btn-light">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive activity-scroll">
+                            <table class="table table-striped table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Student</th>
+                                        <th>Type</th>
+                                        <th>Qty</th>
+                                        <th>Reference</th>
+                                        <th>By</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTransactionsBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">Loading…</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
     @endif
 
     {{-- ===== CHARTS ROW 1 ===== --}}
@@ -379,14 +436,14 @@
             }
         });
     </script>
-@if(Auth::user()->is_admin)
-    <script>
-        window.RT = {
-            stats: "{{ route('api.stats') }}",
-            high: "{{ route('api.high-backlog') }}",
-            recent: "{{ route('api.recent') }}"
-        };
-    </script>
-    <script src="{{ asset('js/dashboard-realtime.js') }}"></script>
-@endif
+    @if(Auth::user()->is_admin)
+        <script>
+            window.RT = {
+                stats: "{{ route('api.stats') }}",
+                high: "{{ route('api.high-backlog') }}",
+                recent: "{{ route('api.recent') }}"
+            };
+        </script>
+        <script src="{{ asset('js/dashboard-realtime.js') }}"></script>
+    @endif
 @endsection
