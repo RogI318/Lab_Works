@@ -13,6 +13,45 @@
         @endif
     </div>
 
+    {{-- ===== STAT CARDS ===== --}}
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card text-center shadow-hover border-accent">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">📚 GPA</h5>
+                    <h2 id="statGpa" class="card-text fw-bold text-primary">{{ number_format($avgGpa, 2) }}</h2>
+                    <small>Overall Grade Point Average</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card text-center shadow-hover border-primary-custom">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">📖 COURSES</h5>
+                    <h2 id="statCourses" class="card-text fw-bold text-primary">{{ $courseCount }}</h2>
+                    <small>Active Enrollments</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card text-center shadow-hover border-success-custom">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">📝 ASSIGNMENTS</h5>
+                    <h2 id="statAssignments" class="card-text fw-bold text-success">{{ $pendingAssignments }}</h2>
+                    <small>Pending Tasks</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card text-center shadow-hover border-accent">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">✅ ATTENDANCE</h5>
+                    <h2 id="statAttendance" class="card-text fw-bold text-warning">{{ $avgAttendance }}%</h2>
+                    <small>This Semester</small>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="row mb-4">
 
@@ -70,46 +109,6 @@
 
     </div>
 
-    {{-- ===== STAT CARDS ===== --}}
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card text-center shadow-hover border-accent">
-                <div class="card-body">
-                    <h5 class="card-title text-muted">📚 GPA</h5>
-                    <h2 id="statGpa" class="card-text fw-bold text-primary">{{ number_format($avgGpa, 2) }}</h2>
-                    <small>Overall Grade Point Average</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card text-center shadow-hover border-primary-custom">
-                <div class="card-body">
-                    <h5 class="card-title text-muted">📖 COURSES</h5>
-                    <h2 id="statCourses" class="card-text fw-bold text-primary">{{ $courseCount }}</h2>
-                    <small>Active Enrollments</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card text-center shadow-hover border-success-custom">
-                <div class="card-body">
-                    <h5 class="card-title text-muted">📝 ASSIGNMENTS</h5>
-                    <h2 id="statAssignments" class="card-text fw-bold text-success">{{ $pendingAssignments }}</h2>
-                    <small>Pending Tasks</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card text-center shadow-hover border-accent">
-                <div class="card-body">
-                    <h5 class="card-title text-muted">✅ ATTENDANCE</h5>
-                    <h2 id="statAttendance" class="card-text fw-bold text-warning">{{ $avgAttendance }}%</h2>
-                    <small>This Semester</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
     {{-- ===== ALERT CENTER ===== --}}
     <div class="row mb-4">
         <div class="col-12">
@@ -128,7 +127,7 @@
                 <div class="card-body" id="alertsList">
                     @forelse($flaggedStudents as $student)
                         <div class="alert {{ $student->isOnProbation() ? 'bg-danger text-white' : 'bg-warning text-dark' }}
-                                                                                            alert-dismissible fade show d-flex align-items-center mb-2"
+                                                                                                    alert-dismissible fade show d-flex align-items-center mb-2"
                             role="alert">
                             <i
                                 class="bi {{ $student->isOnProbation() ? 'bi-exclamation-octagon-fill' : 'bi-exclamation-triangle-fill' }} me-3 fs-4"></i>
