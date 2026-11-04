@@ -61,6 +61,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         // Academic Intervention Management
+        // export MUST come before the resource route
+        Route::get('/interventions/export', [AcademicInterventionController::class, 'export'])
+            ->name('interventions.export');
+
         Route::resource('interventions', AcademicInterventionController::class);
 
         Route::post('/interventions/{intervention}/approve', [AcademicInterventionController::class, 'approve'])

@@ -1,4 +1,3 @@
-
 @extends('layouts.master')
 
 @section('title', 'Academic Interventions')
@@ -9,9 +8,14 @@
         <h2 class="fw-bold mb-1">Academic Interventions</h2>
         <p class="text-muted mb-0">Manage student academic support and intervention requests.</p>
     </div>
-    <a href="{{ route('interventions.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-1"></i> New Intervention
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('interventions.export', request()->query()) }}" class="btn btn-outline-success">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+        <a href="{{ route('interventions.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> New Intervention
+        </a>
+    </div>
 </div>
 
 @if(session('success'))
@@ -25,7 +29,13 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <form method="GET" action="{{ route('interventions.index') }}" class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-6">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" value="{{ request('search') }}"
+                       class="form-control" placeholder="Reference, type, student name or ID">
+            </div>
+
+            <div class="col-md-3">
                 <label class="form-label">Status</label>
                 <select name="status" class="form-select">
                     <option value="">All statuses</option>
@@ -37,7 +47,7 @@
                 </select>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">Priority</label>
                 <select name="priority" class="form-select">
                     <option value="">All priorities</option>
@@ -49,7 +59,25 @@
                 </select>
             </div>
 
-            <div class="col-md-4 d-flex align-items-end gap-2">
+            <div class="col-md-3">
+                <label class="form-label">Created from</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-control">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Created to</label>
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-control">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Records</label>
+                <select name="archived" class="form-select">
+                    <option value="">Active records</option>
+                    <option value="only" @selected(request('archived') === 'only')>Archived (deleted) only</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end gap-2">
                 <button class="btn btn-primary" type="submit">Filter</button>
                 <a href="{{ route('interventions.index') }}" class="btn btn-outline-secondary">Reset</a>
             </div>
@@ -59,7 +87,7 @@
 
 <div class="card shadow-sm">
     <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">Intervention Records</h5>
+        <h5 class="mb-0">Intervention Records ({{ $interventions->total() }})</h5>
     </div>
 
     <div class="card-body">
@@ -100,10 +128,21 @@
                             </td>
                             <td>{{ $intervention->created_at->format('M d, Y') }}</td>
                             <td>
-                                <a href="{{ route('interventions.show', $intervention) }}"
-                                   class="btn btn-sm btn-outline-primary">
-                                    View
-                                </a>
+                                @if($intervention->trashed())
+                                    <form method="POST"
+                                          action="{{ route('interventions.restore', $intervention->id) }}"
+                                          class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            Restore
+                                        </button>
+                                    </form>
+                                @else
+                                    <a href="{{ route('interventions.show', $intervention) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                @endif
                             </td>
                         </tr>
                     @empty
