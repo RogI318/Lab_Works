@@ -1,8 +1,9 @@
 <?php
 
+use App\Http\Controllers\AcademicInterventionController;
+use App\Http\Controllers\AcademicProgressController;
 use App\Http\Controllers\Api\AcademicDashboardController;
 use App\Http\Controllers\Api\RealtimeController;
-use App\Http\Controllers\AcademicInterventionController;
 use App\Http\Controllers\AssignmentTransactionController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
@@ -42,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Reports
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/movements/export', [ReportController::class, 'exportMovements'])->name('reports.export');
+        Route::get('/reports/academic-progress', AcademicProgressController::class)->name('reports.academic-progress');
 
         // Notifications (bell)
         Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');

@@ -131,8 +131,12 @@
                                     href="{{ route('interventions.index') }}">Academic Interventions</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+                                <a class="nav-link {{ request()->routeIs('reports.index', 'reports.export') ? 'active' : '' }}"
                                     href="{{ route('reports.index') }}">Reports</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('reports.academic-progress') ? 'active' : '' }}"
+                                    href="{{ route('reports.academic-progress') }}">Progress Report</a>
                             </li>
                         @endif
                         <li class="nav-item">
