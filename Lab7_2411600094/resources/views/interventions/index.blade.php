@@ -10,7 +10,10 @@
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('interventions.export', request()->query()) }}" class="btn btn-outline-success">
-            <i class="bi bi-download me-1"></i> Export CSV
+            <i class="bi bi-filetype-csv me-1"></i> CSV
+        </a>
+        <a href="{{ route('interventions.export.pdf', request()->query()) }}" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
         </a>
         <a href="{{ route('interventions.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> New Intervention

@@ -6,6 +6,7 @@ use App\Http\Controllers\AcademicInterventionController;
 use App\Http\Controllers\AssignmentTransactionController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InterventionPdfController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -61,9 +62,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         // Academic Intervention Management
-        // export MUST come before the resource route
+        // export routes MUST come before the resource route
         Route::get('/interventions/export', [AcademicInterventionController::class, 'export'])
             ->name('interventions.export');
+
+        Route::get('/interventions/export/pdf', InterventionPdfController::class)
+            ->name('interventions.export.pdf');
 
         Route::resource('interventions', AcademicInterventionController::class);
 
