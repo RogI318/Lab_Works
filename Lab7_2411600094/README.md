@@ -1,59 +1,86 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Lab 7 – Student Portal Management with Automated Academic Monitoring and Student Support System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel 12 Student Portal that extends Lab 5 (MVC and CRUD) and Lab 6 (admin role separation and assignment tracking).
+The lab's inventory example was adapted to a student portal:
 
-## About Laravel
+| Lab 7 example | This project |
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Supplier | Student |
+| Purchase Order | Academic Intervention Request |
+| Purchase Order Approval | Intervention Approval |
+| Reorder Point | Academic Backlog Threshold (5 pending assignments) |
+| Replenishment | Student Academic Support |
+| Supplier Performance | Academic Progress Monitoring |
+| Inventory Dashboard | Academic Monitoring Dashboard |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## New features in Lab 7
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Academic Intervention management
+- Create, view, edit and delete academic intervention requests for students
+- Approval workflow: pending → approved / rejected → in progress → completed
+- Soft deletes: deleted interventions go to an archive and can be restored
+- Reference numbers and priority levels (Low, Medium, High, Critical)
 
-## Learning Laravel
+### Authorization
+- A Gate (`admin-only`) for general administrator checks
+- `AcademicInterventionPolicy` with rules based on the request status
+  (for example, only pending requests can be approved, rejected, edited or deleted)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Automation
+- Artisan command `students:check-academic-risk` finds students with heavy assignment backlogs
+- The command is scheduled daily at 08:00 and its output is logged to
+  `storage/logs/academic-risk-check.log`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Email notifications (Laravel Mailables)
+- New intervention created
+- Intervention approved
+- Academic risk alert for administrators
 
-## Laravel Sponsors
+### Dashboard and performance
+- Dashboard widgets (heavy backlog, pending, approved and total interventions) provided by a View Composer
+- Statistics cached for 60 seconds with automatic cache clearing when data changes
+- JSON API endpoints for academic statistics
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Search, filtering and exports
+- Interventions can be searched by reference number, type or student name/ID
+- Filters for status, priority, date range and archived records
+- CSV and PDF exports that follow the active filters
+- Academic Progress Report page with Chart.js charts
 
-### Premium Partners
+### Testing
+- Feature tests for access control, creation, approval, soft delete and restore,
+  search, CSV export, API output and cache refresh
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Requirements
+- PHP 8.2 or higher
+- Composer
+- MySQL (XAMPP)
+- Node.js is not required to run the app
 
-## Contributing
+## Installation
+1. `composer install`
+2. Copy `.env.example` to `.env`
+3. `php artisan key:generate`
+4. Set your database values in `.env`
+5. `php artisan migrate`
+6. `php artisan db:seed` (see `DatabaseSeeder` for the sample admin account)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Mail settings
+For testing, either keep `MAIL_MAILER=log` (emails appear in `storage/logs/laravel.log`)
+or copy the SMTP settings from a Mailtrap inbox into `.env`, then run `php artisan config:clear`.
+Set `APP_URL=http://127.0.0.1:8000` so email links are correct.
 
-## Code of Conduct
+## Commands to run
+| Command | Purpose |
+| `php artisan serve` | Start the development server |
+| `php artisan students:check-academic-risk` | Run the academic-risk check manually |
+| `php artisan schedule:list` | Show scheduled tasks |
+| `php artisan schedule:run` | Run the scheduler once |
+| `php artisan test --filter=AcademicInterventionTest` | Run the Lab 7 tests |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Main routes (administrator only)
+| URL | Description |
+|
+| `/interventions` | Intervention list with search, filters and exports |
+| `/reports/academic-progress` | Academic Progress Report |
+| `/api/academic-dashboard/stats` | Dashboard statistics (JSON) |
