@@ -3,24 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Student;
 use App\Models\AcademicIntervention;
+use App\Models\Student;
+use App\Support\AcademicStats;
 use Illuminate\Http\JsonResponse;
 
 class AcademicDashboardController extends Controller
 {
     /**
-     * Return academic dashboard statistics.
+     * Return academic dashboard statistics (cached for 60 seconds).
      */
     public function stats(): JsonResponse
     {
-        return response()->json([
-            'heavy_backlog_count' => Student::heavyBacklog()->count(),
-            'pending_intervention_count' => AcademicIntervention::pending()->count(),
-            'approved_intervention_count' => AcademicIntervention::approved()->count(),
-            'total_intervention_count' => AcademicIntervention::count(),
-            'last_updated' => now()->toDateTimeString(),
-        ]);
+        return response()->json(AcademicStats::get());
     }
 
     /**

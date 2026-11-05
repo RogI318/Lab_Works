@@ -2,22 +2,20 @@
 
 namespace App\View\Composers;
 
-use App\Models\Student;
-use App\Models\AcademicIntervention;
+use App\Support\AcademicStats;
 use Illuminate\View\View;
 
 class AcademicDashboardComposer
 {
     public function compose(View $view): void
     {
+        $stats = AcademicStats::get();
+
         $view->with([
-            'heavyBacklogCount' => Student::heavyBacklog()->count(),
-
-            'pendingInterventionCount' => AcademicIntervention::pending()->count(),
-
-            'approvedInterventionCount' => AcademicIntervention::approved()->count(),
-
-            'totalInterventionCount' => AcademicIntervention::count(),
+            'heavyBacklogCount' => $stats['heavy_backlog_count'],
+            'pendingInterventionCount' => $stats['pending_intervention_count'],
+            'approvedInterventionCount' => $stats['approved_intervention_count'],
+            'totalInterventionCount' => $stats['total_intervention_count'],
         ]);
     }
 }
