@@ -19,7 +19,6 @@
 
             <div class="card-body p-4">
 
-            
                 @if (session('status'))
                     <div class="alert alert-success small">
                         {{ session('status') }}
