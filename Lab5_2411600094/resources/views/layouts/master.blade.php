@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Student Portal') | Student Portal</title>
+    <title>@yield('title', 'Inventory') | Student Portal Supply Centre</title>
 
     <!-- Bootstrap 5 (same as Lab 4) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -18,18 +18,20 @@
     <!-- ===== Navbar ===== -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">Student Portal</a>
+            <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">
+                Student Portal <span class="fw-normal opacity-75">| Supply Centre Inventory</span>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item">
-                        <span class="navbar-text text-white me-3">
+                <ul class="navbar-nav ms-auto align-items-start align-items-lg-center">
+                    <li class="nav-item mb-2 mb-lg-0 me-lg-3 text-start">
+                        <span class="navbar-text text-white">
                             Welcome, <span id="userName">{{ Auth::user()->name }}</span>
                         </span>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item text-start">
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
                             @csrf
                             <button class="btn btn-outline-light btn-sm" type="submit">Logout</button>
@@ -50,25 +52,31 @@
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                                href="{{ route('dashboard') }}">
-                                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}"
-                               href="{{ route('students.index') }}">
-                                <i class="bi bi-people me-1"></i> Students
+                            <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
+                               href="{{ route('products.index') }}">
+                                Products
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('courses.*') ? 'active' : '' }}"
-                               href="{{ route('courses.index') }}">
-                                <i class="bi bi-book me-1"></i> Courses
+                            <a class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}"
+                               href="{{ route('brands.index') }}">
+                                Brands
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
-                               href="{{ route('profile.edit') }}">
-                                <i class="bi bi-person-circle me-1"></i> Profile
+                            <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
+                               href="{{ route('categories.index') }}">
+                                Categories
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+                               href="{{ route('reports.index') }}">
+                                Reports
                             </a>
                         </li>
                         <li class="nav-item mt-2">
@@ -91,24 +99,26 @@
     </div>
 
     {{-- Toast notification (same idea as Lab 4) --}}
-    @if(session('success'))
-        <div id="notificationToast" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-            <div class="toast align-items-center text-white bg-success border-0" role="alert" id="flashToast">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
+    @foreach (['success' => 'bg-success', 'error' => 'bg-danger', 'warning' => 'bg-warning text-dark'] as $key => $style)
+        @if (session($key))
+            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                <div class="toast align-items-center text-white border-0 {{ $style }}" role="alert"
+                     id="flashToast-{{ $key }}">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi bi-{{ $key === 'success' ? 'check' : 'exclamation' }}-circle-fill me-2"></i>{{ session($key) }}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                     </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                 </div>
             </div>
-        </div>
-    @endif
+        @endif
+    @endforeach
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    @if(session('success'))
-        <script>
-            new bootstrap.Toast(document.getElementById('flashToast'), { delay: 4000 }).show();
-        </script>
-    @endif
+    <script>
+        document.querySelectorAll('.toast').forEach(el => new bootstrap.Toast(el, { delay: 5000 }).show());
+    </script>
+    @stack('scripts')
 </body>
 </html>

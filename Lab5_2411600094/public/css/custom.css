@@ -194,13 +194,13 @@ a:hover {
    LAB 5 ADDITIONS (carried over from Lab 4)
    ============================================ */
 
-#rosterTable { font-size: 0.95rem; }
-#rosterTable thead th {
+.data-table { font-size: 0.95rem; }
+.data-table thead th {
     background-color: var(--theme-light-accent);
     border-bottom: 2px solid var(--theme-primary);
     font-weight: 600;
 }
-#rosterTable tbody tr:hover { background-color: var(--theme-background); }
+.data-table tbody tr:hover { background-color: var(--theme-background); }
 
 #alertsList { max-height: 300px; overflow-y: auto; }
 #alertsList .alert {
@@ -237,4 +237,35 @@ a:hover {
     .sidebar { min-height: auto !important; height: auto !important; }
     .stat-card .card-text { font-size: 1.4rem; }
     .card-body canvas { max-height: 220px; }
+}
+/* ============================================
+   LAB 5 INVENTORY ADDITIONS
+   ============================================ */
+
+.border-warning-custom { border-left: 4px solid var(--bs-warning); }
+.border-danger-custom { border-left: 4px solid var(--bs-danger); }
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+.card-header { border-radius: 12px 12px 0 0; }
+
+.table thead th { font-weight: 600; }
+
+.badge.bg-warning { background-color: var(--bs-warning) !important; }
+
+.alert {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.empty-state {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--theme-text);
+    background-color: var(--theme-background);
+    border-radius: 10px;
 }

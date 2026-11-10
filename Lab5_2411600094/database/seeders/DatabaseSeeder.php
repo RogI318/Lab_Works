@@ -9,16 +9,23 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Demo account shown on the login page
+        // Part 2 Step 2 — test account used for the login screenshots.
+        // (The same user can be created by hand with artisan tinker; the commands
+        // are listed in README.md.)
         User::updateOrCreate(
             ['email' => 'admin@example.com'],
-            ['name' => 'Admin', 'password' => 'password123']   // hashed by the User model cast
+            [
+                'name'              => 'Supply Centre Admin',
+                'password'          => 'password123',   // hashed by the User model cast
+                'email_verified_at' => now(),
+            ]
         );
 
+        // Brands and categories must exist before the products that reference them.
         $this->call([
-            CourseSeeder::class,
-            StudentSeeder::class,
-            ActivitySeeder::class,
+            CategorySeeder::class,
+            BrandSeeder::class,
+            ProductSeeder::class,
         ]);
     }
 }
