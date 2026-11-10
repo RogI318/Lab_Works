@@ -231,6 +231,17 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
+        // Time-based greeting (same as Lab 4)
+        (function () {
+            const h = new Date().getHours();
+            let tod = 'Good Evening';
+            if (h >= 5 && h < 12)       tod = 'Good Morning';
+            else if (h >= 12 && h < 17) tod = 'Good Afternoon';
+            else if (h >= 17 && h < 21) tod = 'Good Evening';
+            else                        tod = 'Good Night';
+            document.getElementById('greeting').textContent = `${tod}, ` + @json(Auth::user()->name) + '!';
+        })();
+
         const palette = {
             primary: '#FB6F92',
             secondary: '#FF8FAB',

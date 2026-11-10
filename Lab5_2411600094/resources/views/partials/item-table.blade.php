@@ -45,9 +45,6 @@
                         </button>
                     </td>
                 </tr>
-
-                @include('partials.item-modal', ['item' => $item, 'module' => $module])
-                @include('partials.item-delete-modal', ['item' => $item, 'module' => $module])
             @empty
                 <tr>
                     <td colspan="6">
@@ -61,3 +58,9 @@
         </tbody>
     </table>
 </div>
+
+{{-- The pop-ups sit outside the table so the HTML stays valid. --}}
+@foreach($items as $item)
+    @include('partials.item-modal', ['item' => $item, 'module' => $module])
+    @include('partials.item-delete-modal', ['item' => $item, 'module' => $module])
+@endforeach

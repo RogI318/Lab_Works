@@ -27,7 +27,7 @@ class CategoryController extends Controller
         if ($request->input('source') === 'product-form') {
             return redirect()
                 ->route($request->input('product_id') ? 'products.edit' : 'products.create',
-                        ['product' => $request->input('product_id')])
+                        array_filter(['product' => $request->input('product_id')]))
                 ->with('success', "Category \"{$category->name}\" added — it is already selected below.")
                 ->with('new_category_id', $category->id);
         }

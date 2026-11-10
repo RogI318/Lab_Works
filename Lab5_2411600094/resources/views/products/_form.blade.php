@@ -92,6 +92,9 @@
                class="form-control @if($productErrors) @error('quantity') is-invalid @enderror @endif"
                value="{{ old('quantity') !== null && $productErrors ? old('quantity') : ($product->quantity ?? 0) }}">
         @if($productErrors)@error('quantity')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
+        <small class="text-muted">
+            {{ isset($product) ? 'Changing this records a stock adjustment.' : 'Saved as the opening stock.' }}
+        </small>
     </div>
 
     <div class="col-md-4">
@@ -154,14 +157,23 @@
             const form = document.getElementById('productForm');
             const key  = form.dataset.draftKey;
 
-            if ({{ old() ? 'true' : 'false' }}) {
-                sessionStorage.removeItem(key);          // server-side old input wins
+            // The product form itself came back with errors: the server-side old input wins.
+            const fromProductForm = {{ old() && ! old('modal_key') ? 'true' : 'false' }};
+            // The page came back from the Brand / Category pop-up (saved, or failed validation).
+            const fromPopup = {{ old('modal_key') || session('new_brand_id') || session('new_category_id') ? 'true' : 'false' }};
+            // The brand / category that was just added must stay selected, not be overwritten by the draft.
+            const serverPicked = @json(array_filter(['brand_id' => session('new_brand_id'), 'category_id' => session('new_category_id')]));
+
+            if (fromProductForm || !fromPopup) {
+                sessionStorage.removeItem(key);          // fresh visit or server input: no stale draft
             } else {
                 const draft = JSON.parse(sessionStorage.getItem(key) || 'null');
                 if (draft) {
                     Object.entries(draft).forEach(([name, value]) => {
                         const field = form.elements[name];
-                        if (field && field.type !== 'hidden' && value !== '') field.value = value;
+                        if (field && field.type !== 'hidden' && value !== '' && !(name in serverPicked)) {
+                            field.value = value;
+                        }
                     });
                 }
             }
