@@ -79,6 +79,14 @@
                                 Reports
                             </a>
                         </li>
+                        @if (Auth::user()->is_admin)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+                                   href="{{ route('users.index') }}">
+                                    Manage Users
+                                </a>
+                            </li>
+                        @endif
                         <li class="nav-item mt-2">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

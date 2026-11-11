@@ -10,14 +10,14 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Part 2 Step 2 — test account used for the login screenshots.
-        // (The same user can be created by hand with artisan tinker; the commands
-        // are listed in README.md.)
+        // This account is the administrator who can manage other users.
         User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'reyzlyn588@gmail.com'],
             [
                 'name'              => 'Supply Centre Admin',
                 'password'          => 'password123',   // hashed by the User model cast
                 'email_verified_at' => now(),
+                'is_admin'          => true,
             ]
         );
 
