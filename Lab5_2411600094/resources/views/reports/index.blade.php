@@ -103,7 +103,7 @@
                             <span class="fw-bold">{{ number_format($totals['units']) }}</span>
                         </li>
                         <li class="d-flex justify-content-between py-2">
-                            <span>Items at or below reorder level</span>
+                            <span>Items at or below the low stock level</span>
                             <span class="fw-bold text-warning">{{ number_format($totals['low_stock']) }}</span>
                         </li>
                     </ul>
@@ -161,11 +161,11 @@
             </div>
         </div>
 
-        {{-- ===== Reorder list ===== --}}
+        {{-- ===== Low stock list ===== --}}
         <div class="col-12 mb-4">
             <div class="card shadow-hover">
                 <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Items to Reorder</h5>
+                    <h5 class="mb-0">Low Stock Items</h5>
                     <span class="badge bg-light text-dark">{{ $lowStock->count() + $outOfStock->count() }} flagged</span>
                 </div>
                 <div class="card-body">
@@ -174,7 +174,7 @@
                             <thead>
                                 <tr>
                                     <th>SKU</th><th>Item</th><th>Category</th><th>Supplier</th>
-                                    <th class="text-end">On Hand</th><th class="text-end">Reorder Level</th>
+                                    <th class="text-end">On Hand</th><th class="text-end">Low Stock Level</th>
                                     <th class="text-end">Suggested Qty</th><th class="text-end">Est. Cost (PHP)</th><th>Status</th>
                                 </tr>
                             </thead>
@@ -193,7 +193,7 @@
                                     </tr>
                                 @empty
                                     <tr><td colspan="9" class="text-center text-success py-4">
-                                        <i class="bi bi-check-circle me-1"></i>Every item is above its reorder level.
+                                        <i class="bi bi-check-circle me-1"></i>No items are running low on stock.
                                     </td></tr>
                                 @endforelse
                             </tbody>

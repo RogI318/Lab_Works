@@ -86,7 +86,7 @@
                             <th>Category</th>
                             <th>Brand</th>
                             <th class="text-end">Qty</th>
-                            <th class="text-end">Reorder</th>
+                            <th class="text-end">Low Stock Level</th>
                             <th class="text-end">Unit Price</th>
                             <th class="text-end">Value</th>
                             <th>Status</th>

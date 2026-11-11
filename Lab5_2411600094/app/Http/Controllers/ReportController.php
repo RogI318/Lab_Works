@@ -25,7 +25,7 @@ class ReportController extends Controller
 
             fputcsv($out, ['Inventory Valuation Report', now()->toDateTimeString()]);
             fputcsv($out, []);
-            fputcsv($out, ['SKU', 'Item', 'Category', 'Brand', 'Supplier', 'Qty', 'Reorder Level', 'Unit Price', 'Total Value', 'Status']);
+            fputcsv($out, ['SKU', 'Item', 'Category', 'Brand', 'Supplier', 'Qty', 'Low Stock Level', 'Unit Price', 'Total Value', 'Status']);
 
             $grand = 0.0;
             foreach ($rows as $p) {

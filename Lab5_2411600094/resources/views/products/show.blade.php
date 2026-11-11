@@ -49,7 +49,7 @@
                             {{ number_format($product->quantity) }} units
                         </dd>
 
-                        <dt class="col-sm-4">Reorder Level</dt>
+                        <dt class="col-sm-4">Low Stock Level</dt>
                         <dd class="col-sm-8">{{ number_format($product->reorder_level) }} units</dd>
 
                         <dt class="col-sm-4">Unit Price</dt>
@@ -68,15 +68,15 @@
             </div>
         </div>
 
-        {{-- ===== Reorder prompt + alert ===== --}}
+        {{-- ===== Low stock prompt + alert ===== --}}
         <div class="col-lg-5 mb-4">
             @if($product->needsReorder())
                 <div class="alert {{ $product->isOutOfStock() ? 'alert-danger' : 'alert-warning' }} shadow-hover">
                     <h5 class="alert-heading">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Reorder required
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Low stock alert
                     </h5>
                     <p class="mb-2">
-                        Stock is at or below the reorder level. Suggested order:
+                        Stock is at or below the low stock level. Suggested order:
                         <strong>{{ number_format($product->unitQuantityMissing()) }} units</strong>
                         (about PHP {{ number_format($product->unitQuantityMissing() * (float) $product->unit_price, 2) }}).
                     </p>
@@ -88,7 +88,7 @@
             @else
                 <div class="alert alert-success shadow-hover">
                     <h5 class="alert-heading"><i class="bi bi-check-circle-fill me-1"></i>Healthy stock level</h5>
-                    <p class="mb-0">{{ number_format($product->quantity - $product->reorder_level) }} unit(s) above the reorder point.</p>
+                    <p class="mb-0">{{ number_format($product->quantity - $product->reorder_level) }} unit(s) above the low stock level.</p>
                 </div>
             @endif
 
