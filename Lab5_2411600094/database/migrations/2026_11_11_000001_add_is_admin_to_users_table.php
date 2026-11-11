@@ -9,12 +9,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_admin')->default(false)->after('password');
-        });
+        // Some databases already have this column from an earlier lab, so only add it if missing.
+        if (! Schema::hasColumn('users', 'is_admin')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('is_admin')->default(false)->after('password');
+            });
+        }
 
         // Make sure nobody is locked out after migrating: the demo admin becomes an
-        // admin, and if that account does not exist, the oldest user does instead.
+        // admin, and if no admin exists at all, the oldest user becomes one instead.
         DB::table('users')->where('email', 'admin@example.com')->update(['is_admin' => true]);
 
         if (! DB::table('users')->where('is_admin', true)->exists()) {
@@ -27,8 +30,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('is_admin');
-        });
+        if (Schema::hasColumn('users', 'is_admin')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('is_admin');
+            });
+        }
     }
 };
