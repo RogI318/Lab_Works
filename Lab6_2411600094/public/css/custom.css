@@ -14,9 +14,6 @@
     --theme-background: #FFE5EC;
     --theme-light-accent: #FFC2D1;
     --theme-text: #5a3d4a;
-
-    --link-color: #8f2f55;
-    --link-hover: #FB6F92;
 }
 
 body {
@@ -197,13 +194,13 @@ a:hover {
    LAB 5 ADDITIONS (carried over from Lab 4)
    ============================================ */
 
-#rosterTable { font-size: 0.95rem; }
-#rosterTable thead th {
+.data-table { font-size: 0.95rem; }
+.data-table thead th {
     background-color: var(--theme-light-accent);
     border-bottom: 2px solid var(--theme-primary);
     font-weight: 600;
 }
-#rosterTable tbody tr:hover { background-color: var(--theme-background); }
+.data-table tbody tr:hover { background-color: var(--theme-background); }
 
 #alertsList { max-height: 300px; overflow-y: auto; }
 #alertsList .alert {
@@ -241,126 +238,44 @@ a:hover {
     .stat-card .card-text { font-size: 1.4rem; }
     .card-body canvas { max-height: 220px; }
 }
+/* ============================================
+   LAB 5 INVENTORY ADDITIONS
+   ============================================ */
 
-/* Lab 6: number flash when the dashboard updates */
-.flash-update {
-    color: #d6456a !important;
-    text-shadow: 0 0 10px rgba(251, 111, 146, 0.6);
-    transition: all 0.3s ease;
-}
+.border-warning-custom { border-left: 4px solid var(--bs-warning); }
+.border-danger-custom { border-left: 4px solid var(--bs-danger); }
 
-.dropdown-menu .dropdown-item.text-wrap { white-space: normal; }
-
-/* =====================================================
-   LAB 6: NAVBAR DROPDOWNS (bell + user menu)
-   ===================================================== */
-.navbar .dropdown-menu {
-    background-color: #fff;
-    border: 1px solid var(--theme-light-accent);
+.card {
+    border: none;
     border-radius: 12px;
-    padding: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    max-height: 70vh;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+.card-header { border-radius: 12px 12px 0 0; }
+
+.table thead th { font-weight: 600; }
+
+.badge.bg-warning { background-color: var(--bs-warning) !important; }
+
+.alert {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* Undo the pink button styling inside dropdowns */
-.navbar .dropdown-menu .dropdown-item {
-    background: transparent !important;
-    color: #212529 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    transform: none !important;
-    width: 100%;
-    text-align: left;
-    padding: 0.85rem 1.25rem !important;
-    white-space: normal;
-}
-.navbar .dropdown-menu .dropdown-item:hover,
-.navbar .dropdown-menu .dropdown-item:focus {
-    background-color: var(--theme-background) !important;
-}
-.navbar .dropdown-menu .dropdown-item.text-danger { color: #dc3545 !important; }
-
-/* Notification list */
-.notif-menu { min-width: 340px; }
-.notif-header { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--theme-light-accent); }
-
-.notif-mark-all {
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    color: var(--theme-primary) !important;
-    padding: 0 !important;
-    font-size: 0.85rem;
-    text-decoration: underline;
+.empty-state {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--theme-text);
+    background-color: var(--theme-background);
+    border-radius: 10px;
 }
 
-.navbar .dropdown-menu .dropdown-item.notif-item {
-    border-top: 1px solid #f4e4ea !important;
+/* Lab 6 Part 7: pulse when a real-time poll changes a stat */
+@keyframes statFlash {
+    0% { background-color: var(--theme-light-accent); }
+    100% { background-color: transparent; }
 }
-.navbar .dropdown-menu .dropdown-item.notif-item.notif-unread {
-    background-color: #fff3f7 !important;
-    border-left: 4px solid var(--theme-primary) !important;
-}
-.navbar .dropdown-menu .dropdown-item.notif-unread:hover {
-    background-color: #ffe3ec !important;
-}
-.notif-text { font-size: 0.9rem; line-height: 1.35; }
-.notif-unread .notif-text { font-weight: 600; }
-.notif-time { color: #6c757d; }
-
-/* =====================================================
-   LAB 6: MOBILE
-   ===================================================== */
-@media (max-width: 767.98px) {
-    main h2 { font-size: 1.4rem; }
-    .card-body { padding: 0.85rem; }
-    .table { font-size: 0.85rem; }
-    .table > :not(caption) > * > * { padding: 0.5rem; }
-    .pagination { flex-wrap: wrap; justify-content: center; }
-    #notificationToast .toast { min-width: 0; max-width: calc(100vw - 2rem); }
-
-    /* Sidebar becomes a horizontal, swipeable menu */
-    .sidebar { padding: 0.5rem !important; min-height: auto !important; }
-    .sidebar .nav.flex-column {
-        flex-direction: row !important;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: 0.25rem;
-    }
-    .sidebar .nav-item { flex: 0 0 auto; margin: 0 !important; }
-    .sidebar .nav-link { white-space: nowrap; padding: 0.5rem 0.85rem; }
-}
-
-@media (max-width: 575.98px) {
-    /* Notification panel spans the phone screen instead of overflowing it */
-    .notif-menu {
-        position: fixed !important;
-        inset: 58px 10px auto 10px !important;
-        width: auto !important;
-        min-width: 0 !important;
-        transform: none !important;
-    }
-}
-
-.table a:not(.btn) {
-    color: var(--link-color);
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.table a:not(.btn):hover {
-    color: var(--link-hover);
-    text-decoration: underline;
-}
-
-.stat-card .card-title {
-    font-size: 0.95rem;
-    word-break: normal;
-    overflow-wrap: normal;
-}
-@media (max-width: 991.98px) {
-    .stat-card .card-title { font-size: 0.78rem; }
+.stat-flash {
+    animation: statFlash 1s ease-out;
+    border-radius: 8px;
 }

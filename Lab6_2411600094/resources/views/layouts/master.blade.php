@@ -1,95 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Student Portal') | Student Portal</title>
+    <title>@yield('title', 'Inventory') | Student Portal Supply Centre</title>
 
-
+    <!-- Bootstrap 5 (same as Lab 4) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
 
+    <!-- Lab 4 color scheme -->
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
 </head>
-
 <body>
 
     <!-- ===== Navbar ===== -->
-    @if(Auth::user()->is_admin)
-        @php
-            $unreadCount = Auth::user()->unreadNotifications()->count();
-            $recentNotifications = Auth::user()->notifications()->latest()->take(5)->get();
-        @endphp
-    @endif
-
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">Student Portal</a>
-
-            @if(Auth::user()->is_admin)
-                {{-- Notification bell (admin only) --}}
-                <div class="dropdown ms-auto me-2 me-lg-3">
-                    <a class="nav-link position-relative text-white px-2" href="#" id="bellDropdown" role="button"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-bell-fill fs-5"></i>
-                        <span id="bellCount"
-                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $unreadCount ? '' : 'd-none' }}">{{ $unreadCount }}</span>
-                    </a>
-
-                    <ul class="dropdown-menu dropdown-menu-end notif-menu shadow" aria-labelledby="bellDropdown">
-                        <li class="notif-header d-flex justify-content-between align-items-center">
-                            <strong>Notifications</strong>
-                            @if($unreadCount)
-                                <form method="POST" action="{{ route('notifications.readAll') }}">
-                                    @csrf
-                                    <button class="notif-mark-all" type="submit">Mark all as read</button>
-                                </form>
-                            @endif
-                        </li>
-
-                        @forelse($recentNotifications as $n)
-                            <li>
-                                <form method="POST" action="{{ route('notifications.read', $n->id) }}">
-                                    @csrf
-                                    <button type="submit"
-                                        class="dropdown-item notif-item {{ $n->read_at ? '' : 'notif-unread' }}">
-                                        <div class="d-flex gap-2">
-                                            <i class="bi bi-exclamation-triangle-fill text-warning mt-1"></i>
-                                            <div>
-                                                <div class="notif-text">{{ $n->data['message'] ?? 'Notification' }}</div>
-                                                <small class="notif-time">{{ $n->created_at->diffForHumans() }}</small>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </form>
-                            </li>
-                        @empty
-                            <li class="px-3 py-4 text-center text-muted small">No notifications yet.</li>
-                        @endforelse
-                    </ul>
-                </div>
-            @endif
-
-            <button class="navbar-toggler {{ Auth::user()->is_admin ? '' : 'ms-auto' }}" type="button"
-                data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">
+                Student Portal <span class="fw-normal opacity-75">| Supply Centre Inventory</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                @php
+                    $navUser = Auth::user();
+                    $unreadCount = $navUser->unreadNotifications()->count();
+                    $recentAlerts = $navUser->unreadNotifications()
+                        ->latest('created_at')->take(5)->get();
+                @endphp
+                <ul class="navbar-nav ms-auto align-items-start align-items-lg-center">
 
-            <div class="collapse navbar-collapse flex-grow-0 {{ Auth::user()->is_admin ? '' : 'ms-lg-auto' }}" id="navbarNav">
-                <ul class="navbar-nav align-items-lg-center">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
-                            data-bs-toggle="dropdown" aria-expanded="false">
-                            Welcome, <span id="userName">{{ Auth::user()->name }}</span>
+                    {{-- Lab 6 Part 5 Step 1: notification bell --}}
+                    <li class="nav-item dropdown me-lg-2">
+                        <a class="nav-link position-relative" href="#" role="button"
+                           data-bs-toggle="dropdown" aria-label="Notifications">
+                            <i class="bi bi-bell fs-5"></i>
+                            @if ($unreadCount > 0)
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+                                </span>
+                            @endif
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                        <div class="dropdown-menu dropdown-menu-end shadow" style="min-width: 320px;">
+                            <h6 class="dropdown-header"><i class="bi bi-exclamation-triangle me-1"></i>Low stock alerts</h6>
+                            @forelse ($recentAlerts as $alert)
+                                <a class="dropdown-item text-truncate" href="{{ route('notifications.show', $alert->id) }}">
+                                    {{ $alert->data['subject'] ?? 'Inventory alert' }}
+                                    <small class="text-muted d-block">{{ $alert->created_at->diffForHumans() }}</small>
+                                </a>
+                            @empty
+                                <p class="dropdown-item text-muted small mb-0">No unread alerts.</p>
+                            @endforelse
+                            <div class="dropdown-divider"></div>
+                            <form method="POST" action="{{ route('notifications.readAll') }}">
+                                @csrf @method('PUT')
+                                <button class="dropdown-item" type="submit">Mark all as read</button>
+                            </form>
+                        </div>
+                    </li>
+
+                    {{-- Lab 6 Part 5 Step 1: user dropdown --}}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i>{{ $navUser->name }}
+                            @if ($navUser->is_admin)
+                                <span class="badge text-bg-light ms-1">Admin</span>
+                            @endif
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><span class="dropdown-header">{{ $navUser->email }}</span></li>
+                            <li><a class="dropdown-item" href="{{ route('profile.edit') }}">
+                                <i class="bi bi-person-gear me-2"></i>Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
                                     <button class="dropdown-item text-danger" type="submit">
-                                        <i class="bi bi-box-arrow-right me-1"></i> Logout
+                                        <i class="bi bi-box-arrow-right me-2"></i>Logout
                                     </button>
                                 </form>
                             </li>
@@ -109,35 +99,46 @@
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
-                                href="{{ route('dashboard') }}">Dashboard</a>
+                               href="{{ route('dashboard') }}">
+                                Dashboard
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}"
-                                href="{{ route('students.index') }}">Students</a>
+                            <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
+                               href="{{ route('products.index') }}">
+                                Products
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('courses.*') ? 'active' : '' }}"
-                                href="{{ route('courses.index') }}">Courses</a>
+                            <a class="nav-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}"
+                               href="{{ route('transactions.index') }}">
+                                Transactions
+                            </a>
                         </li>
-                        @if(Auth::user()->is_admin)
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('assignments.*') ? 'active' : '' }}"
-                                    href="{{ route('assignments.index') }}">Assignments</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
-                                    href="{{ route('reports.index') }}">Reports</a>
-                            </li>
-                        @endif
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
-                                href="{{ route('profile.edit') }}">Profile</a>
+                            <a class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}"
+                               href="{{ route('brands.index') }}">
+                                Brands
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
+                               href="{{ route('categories.index') }}">
+                                Categories
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+                               href="{{ route('reports.index') }}">
+                                Reports
+                            </a>
                         </li>
                         <li class="nav-item mt-2">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button class="nav-link text-danger border-0 bg-transparent w-100 text-start"
-                                    type="submit">Logout</button>
+                                <button class="nav-link text-danger border-0 bg-transparent w-100 text-start" type="submit">
+                                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                                </button>
                             </form>
                         </li>
                     </ul>
@@ -152,31 +153,26 @@
     </div>
 
     {{-- Toast notification (same idea as Lab 4) --}}
-    @php
-        $flash = session('success') ? ['success', 'check-circle-fill', session('success')]
-            : (session('error') ? ['danger', 'exclamation-triangle-fill', session('error')] : null);
-    @endphp
-
-    @if($flash)
-        <div id="notificationToast" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-            <div class="toast align-items-center text-white bg-{{ $flash[0] }} border-0" role="alert" id="flashToast">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        <i class="bi bi-{{ $flash[1] }} me-2"></i>{{ $flash[2] }}
+    @foreach (['success' => 'bg-success', 'error' => 'bg-danger', 'warning' => 'bg-warning text-dark', 'info' => 'bg-info text-dark'] as $key => $style)
+        @if (session($key))
+            <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                <div class="toast align-items-center text-white border-0 {{ $style }}" role="alert"
+                     id="flashToast-{{ $key }}">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi bi-{{ $key === 'success' ? 'check' : ($key === 'info' ? 'info' : 'exclamation') }}-circle-fill me-2"></i>{{ session($key) }}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                     </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                 </div>
             </div>
-        </div>
-    @endif
+        @endif
+    @endforeach
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    @if($flash)
-        <script>
-            new bootstrap.Toast(document.getElementById('flashToast'), { delay: 5000 }).show();
-        </script>
-    @endif
-
+    <script>
+        document.querySelectorAll('.toast').forEach(el => new bootstrap.Toast(el, { delay: 5000 }).show());
+    </script>
+    @stack('scripts')
 </body>
-
 </html>

@@ -1,128 +1,185 @@
+/*
+ * Lab 6 Part 7 Step 3 — AJAX polling for the dashboard (30s).
+ * Module pattern: one object owns the interval, fetches the three API
+ * endpoints, animates changed numbers, rebuilds the alert + movement
+ * lists, and reports staleness without ever breaking the page.
+ */
 (function () {
     'use strict';
 
-    const cfg = window.RT || {};
-    const POLL_MS = 30000;               // 30 seconds
-    const $ = (id) => document.getElementById(id);
+    const cfg = window.LAB6_REALTIME;
+    if (!cfg) return;
 
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
-        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-    ));
+    const INTERVAL_MS = cfg.intervalMs || 30000;
 
-    function getJson(url) {
-        return fetch(url, {
+    const els = {
+        products:  document.getElementById('statProducts'),
+        units:     document.getElementById('statUnits'),
+        low:       document.getElementById('statLowStock'),
+        out:       document.getElementById('statOutOfStock'),
+        value:     document.getElementById('statValue'),
+        alerts:    document.getElementById('alertsList'),
+        moves:     document.getElementById('recentMovesBody'),
+        updated:   document.getElementById('lastUpdated'),
+        status:    document.getElementById('liveStatus'),
+    };
+
+    function setStatus(text, className) {
+        if (!els.status) return;
+        els.status.textContent = text;
+        els.status.className = className;
+    }
+
+    async function getJson(url) {
+        const res = await fetch(url, {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'same-origin'
-        }).then((res) => {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.json();
+            credentials: 'same-origin',
+        });
+        if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+        return res.json();
+    }
+
+    // Count-up animation so refreshed numbers visibly change.
+    function animateValue(el, target, decimals = 0, prefix = '') {
+        if (!el) return;
+        const startText = (el.textContent || '').replace(/[^\d.-]/g, '');
+        const start = parseFloat(startText) || 0;
+        if (start === target) return;
+
+        const duration = 500;
+        const t0 = performance.now();
+        const step = (t) => {
+            const p = Math.min(1, (t - t0) / duration);
+            const eased = 1 - Math.pow(1 - p, 3);
+            const val = start + (target - start) * eased;
+            el.textContent = prefix + val.toLocaleString('en-US', {
+                minimumFractionDigits: decimals, maximumFractionDigits: decimals,
+            });
+            if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+        el.classList.remove('stat-flash');
+        void el.offsetWidth; // restart CSS animation
+        el.classList.add('stat-flash');
+    }
+
+    function renderStats(payload) {
+        const d = payload.data;
+        animateValue(els.products, d.total_products);
+        animateValue(els.units, d.total_units);
+        animateValue(els.low, d.low_stock_count);
+        animateValue(els.out, d.out_of_stock_count);
+        animateValue(els.value, d.inventory_value, 2);
+        if (els.updated) els.updated.textContent = new Date().toLocaleTimeString();
+    }
+
+    function link(name, href, cls) {
+        const a = document.createElement('a');
+        a.href = href;
+        a.textContent = name;
+        if (cls) a.className = cls;
+        return a;
+    }
+
+    function renderAlerts(items) {
+        if (!els.alerts) return;
+        els.alerts.textContent = '';
+
+        if (!items.length) {
+            const ok = document.createElement('div');
+            ok.className = 'alert alert-success mb-0';
+            ok.textContent = 'No items are below their reorder level.';
+            els.alerts.appendChild(ok);
+            return;
+        }
+
+        items.forEach((p) => {
+            const row = document.createElement('div');
+            row.className = 'alert mb-2 d-flex justify-content-between align-items-center '
+                + (p.quantity <= 0 ? 'alert-danger' : 'alert-warning');
+
+            const info = document.createElement('div');
+            const strong = document.createElement('strong');
+            strong.appendChild(link(p.name, p.url, 'text-decoration-none'));
+            info.appendChild(strong);
+            info.appendChild(document.createElement('br'));
+            const small = document.createElement('small');
+            small.textContent = `${p.category || ''} - reorder level ${p.reorder_level}`;
+            info.appendChild(small);
+
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-dark';
+            badge.textContent = `${p.quantity} left`;
+
+            row.appendChild(info);
+            row.appendChild(badge);
+            els.alerts.appendChild(row);
         });
     }
 
-    // Smoothly animate a number from its current value to a new one
-    function animateNumber(el, to, decimals, suffix) {
-        if (!el) return;
-        decimals = decimals || 0;
-        suffix = suffix || '';
-        const from = parseFloat(el.dataset.value ?? el.textContent) || 0;
+    function renderMoves(items) {
+        if (!els.moves) return;
+        els.moves.textContent = '';
 
-        if (from === to) {
-            el.textContent = to.toFixed(decimals) + suffix;
-            el.dataset.value = to;
+        if (!items.length) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 5;
+            td.className = 'text-center text-muted py-3';
+            td.textContent = 'No movements recorded yet.';
+            tr.appendChild(td);
+            els.moves.appendChild(tr);
             return;
         }
 
-        const start = performance.now();
-        const duration = 700;
+        items.forEach((t) => {
+            const tr = document.createElement('tr');
 
-        function step(now) {
-            const p = Math.min((now - start) / duration, 1);
-            el.textContent = (from + (to - from) * p).toFixed(decimals) + suffix;
-            if (p < 1) {
-                requestAnimationFrame(step);
-            } else {
-                el.dataset.value = to;
-            }
+            const when = document.createElement('td');
+            when.className = 'small text-nowrap';
+            when.textContent = t.created_for_humans;
+
+            const product = document.createElement('td');
+            product.appendChild(link(t.product ? t.product.name : '—', t.product && t.product.url
+                ? t.product.url : '#', 'text-decoration-none'));
+
+            const type = document.createElement('td');
+            const badge = document.createElement('span');
+            badge.className = 'badge ' + t.badge_class;
+            badge.textContent = t.type_label;
+            type.appendChild(badge);
+
+            const qty = document.createElement('td');
+            qty.className = 'text-end fw-bold ' + (t.quantity_signed >= 0 ? 'text-success' : 'text-danger');
+            qty.textContent = (t.quantity_signed > 0 ? '+' : '') + t.quantity_signed;
+
+            const by = document.createElement('td');
+            by.className = 'small';
+            by.textContent = (t.user && t.user.name) || 'System';
+
+            tr.append(when, product, type, qty, by);
+            els.moves.appendChild(tr);
+        });
+    }
+
+    async function refresh() {
+        try {
+            const [stats, lowStock, recent] = await Promise.all([
+                getJson(cfg.endpoints.stats),
+                getJson(cfg.endpoints.lowStock),
+                getJson(cfg.endpoints.recent),
+            ]);
+            renderStats(stats);
+            renderAlerts(lowStock.data);
+            renderMoves(recent.data);
+            setStatus('', '');
+        } catch (err) {
+            // Docx: handle errors gracefully — keep showing the last good
+            // render and tell the user we are stale.
+            console.warn('Dashboard polling failed:', err);
+            setStatus('· live updates paused, retrying…', 'text-warning');
         }
-        requestAnimationFrame(step);
-
-        el.classList.add('flash-update');
-        setTimeout(() => el.classList.remove('flash-update'), 900);
     }
 
-    function updateStats(s) {
-        animateNumber($('statGpa'), s.avg_gpa, 2);
-        animateNumber($('statCourses'), s.courses, 0);
-        animateNumber($('statAssignments'), s.pending_assignments, 0);
-        animateNumber($('statAttendance'), s.avg_attendance, 0, '%');
-
-        const bell = $('bellCount');
-        if (bell) {
-            bell.textContent = s.unread_notifications;
-            bell.classList.toggle('d-none', s.unread_notifications < 1);
-        }
-
-        if ($('lastUpdated')) $('lastUpdated').textContent = s.last_updated;
-        if ($('pollStatus')) $('pollStatus').textContent = '';
-    }
-
-    function renderHeavy(list) {
-        const box = $('heavyBacklogList');
-        if (!box) return;
-        if ($('heavyCount')) $('heavyCount').textContent = list.length;
-
-        if (list.length === 0) {
-            box.innerHTML = '<div class="text-center py-2"><i class="bi bi-check-circle-fill text-success fs-1 d-block"></i>' +
-                            '<p class="text-muted mb-0">No students with a heavy backlog.</p></div>';
-            return;
-        }
-
-        box.innerHTML = list.map((s) => (
-            '<div class="alert bg-danger text-white d-flex align-items-center mb-2" role="alert">' +
-                '<i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>' +
-                '<div class="flex-grow-1"><strong>' + esc(s.name) + '</strong> (' + esc(s.student_id) + ')<br>' +
-                '<small>' + esc(s.pending_assignments) + ' pending · limit ' + esc(s.backlog_limit) + '</small></div>' +
-                '<a href="' + esc(s.url) + '" class="btn btn-sm btn-light">View</a>' +
-            '</div>'
-        )).join('');
-    }
-
-    function renderRecent(list) {
-        const body = $('recentTransactionsBody');
-        if (!body) return;
-
-        if (list.length === 0) {
-            body.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No transactions yet.</td></tr>';
-            return;
-        }
-
-        body.innerHTML = list.map((t) => (
-            '<tr>' +
-                '<td>' + esc(t.date) + '</td>' +
-                '<td><a href="' + esc(t.student_url) + '">' + esc(t.student_name) + '</a></td>' +
-                '<td><span class="badge ' + esc(t.type_badge) + '">' + esc(t.type_label) + '</span></td>' +
-                '<td class="fw-bold ' + (t.quantity > 0 ? 'text-danger' : 'text-success') + '">' + esc(t.quantity_label) + '</td>' +
-                '<td>' + esc(t.reference_number || '—') + '</td>' +
-                '<td>' + esc(t.recorded_by) + '</td>' +
-            '</tr>'
-        )).join('');
-    }
-
-    function refresh() {
-        if (document.hidden) return;   // don't poll while the tab is in the background
-
-        Promise.all([getJson(cfg.stats), getJson(cfg.high), getJson(cfg.recent)])
-            .then(([stats, high, recent]) => {
-                updateStats(stats);
-                renderHeavy(high.data);
-                renderRecent(recent.data);
-            })
-            .catch(() => {
-                // Keep showing the old data and try again at the next interval
-                if ($('pollStatus')) $('pollStatus').textContent = 'Connection problem. Retrying…';
-            });
-    }
-
-    refresh();                          // first load
-    setInterval(refresh, POLL_MS);      // then every 30 seconds
+    setInterval(refresh, INTERVAL_MS);
 })();

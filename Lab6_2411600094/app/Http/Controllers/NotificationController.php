@@ -2,30 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
 
+/** Lab 6 Part 5/6: the notification bell actions. */
 class NotificationController extends Controller
 {
-    /** Mark one notification as read, then go to the student it is about. */
-    public function read(Request $request, string $id)
+    /** Opening an alert marks it read and jumps to the product it warns about. */
+    public function show(Request $request, DatabaseNotification $notification)
     {
-        $notification = $request->user()->notifications()->findOrFail($id);
+        abort_unless($notification->notifiable->is($request->user()), 403);
+
         $notification->markAsRead();
 
-        $studentId = $notification->data['student_id'] ?? null;
+        $productId = $notification->data['product_id'] ?? null;
 
-        if ($studentId && Student::whereKey($studentId)->exists()) {
-            return redirect()->route('students.show', $studentId);
-        }
-
-        return redirect()->route('dashboard');
+        return redirect($productId
+            ? route('products.show', $productId)
+            : route('dashboard'));
     }
 
     public function readAll(Request $request)
     {
         $request->user()->unreadNotifications->markAsRead();
 
-        return back();
+        return back()->with('success', 'All notifications marked as read.');
     }
 }

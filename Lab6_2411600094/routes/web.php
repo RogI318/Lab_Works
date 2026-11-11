@@ -1,74 +1,57 @@
 <?php
 
-use App\Http\Controllers\Api\RealtimeController;
-use App\Http\Controllers\AssignmentTransactionController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\CourseController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InventoryTransactionController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\StudentController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StockAdjustmentController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\EnsureUserIsAdmin;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+// Part 6 Step 1 — every inventory page sits behind the auth middleware.
+Route::middleware('auth')->group(function () {
 
-    // Dashboard
+    // Dashboard — real inventory statistics from MySQL
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Students — export must come BEFORE the resource route
-    Route::get('/students/export', [StudentController::class, 'export'])->name('students.export');
-    Route::resource('students', StudentController::class);
+    // Products: full resource (index, create, store, show, edit, update, destroy)
+    Route::resource('products', ProductController::class);
 
-    // Courses
-    Route::resource('courses', CourseController::class)->except('show');
+    // Lab 6 Part 3: inventory transaction ledger (no edit/update —
+    // movements are corrected by deleting and re-recording, admin only).
+    Route::resource('transactions', InventoryTransactionController::class)
+        ->except(['edit', 'update']);
 
-           // ================= ADMIN ONLY (Lab 6 features) =================
-    Route::middleware(EnsureUserIsAdmin::class)->group(function () {
-
-        // adjust routes MUST come before the resource route
-        Route::get('/assignments/adjust', [AssignmentTransactionController::class, 'adjust'])->name('assignments.adjust');
-        Route::post('/assignments/adjust', [AssignmentTransactionController::class, 'storeAdjustment'])->name('assignments.adjust.store');
-        Route::resource('assignments', AssignmentTransactionController::class)
-            ->only(['index', 'create', 'store', 'show', 'destroy']);
-
-        // Reports
-        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-        Route::get('/reports/movements/export', [ReportController::class, 'exportMovements'])->name('reports.export');
-
-        // Notifications (bell)
-        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
-        Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
-
-        // JSON endpoints polled by the dashboard
-        Route::prefix('api')->name('api.')->group(function () {
-            Route::get('/dashboard/stats', [RealtimeController::class, 'stats'])->name('stats');
-            Route::get('/students/high-backlog', [RealtimeController::class, 'highBacklog'])->name('high-backlog');
-            Route::get('/students/{student}/backlog', [RealtimeController::class, 'studentBacklog'])->name('student-backlog');
-            Route::get('/transactions/recent', [RealtimeController::class, 'recentTransactions'])->name('recent');
-        });
+    // Lab 6 Part 8: stock adjustments. The form itself is the modal on the
+    // transactions list, so only the AJAX lookup and the submit live here.
+    Route::prefix('adjustments')->name('adjustments.')->group(function () {
+        Route::get('/{product}/quantity', [StockAdjustmentController::class, 'quantity'])
+            ->whereNumber('product')->name('quantity');
+        Route::post('/', [StockAdjustmentController::class, 'store'])->name('store');
     });
+
+    // Lab 6 Part 5/6: notification bell (open marks read, jump to product)
+    Route::get('/notifications/{notification}', [NotificationController::class, 'show'])
+        ->name('notifications.show');
+    Route::put('/notifications/read-all', [NotificationController::class, 'readAll'])
+        ->name('notifications.readAll');
+
+    // Brands and Categories: CRUD runs through modals, so only index/store/
+    // update/destroy are needed.
+    Route::resource('brands', BrandController::class)->except(['create', 'edit', 'show']);
+    Route::resource('categories', CategoryController::class)->except(['create', 'edit', 'show']);
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/movements/export', [ReportController::class, 'exportMovements'])->name('reports.export');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 
-    // Notifications (bell)
-    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
-    Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
-
-    // JSON endpoints polled by the dashboard (session-protected)
-    Route::prefix('api')->name('api.')->group(function () {
-        Route::get('/dashboard/stats', [RealtimeController::class, 'stats'])->name('stats');
-        Route::get('/students/high-backlog', [RealtimeController::class, 'highBacklog'])->name('high-backlog');
-        Route::get('/students/{student}/backlog', [RealtimeController::class, 'studentBacklog'])->name('student-backlog');
-        Route::get('/transactions/recent', [RealtimeController::class, 'recentTransactions'])->name('recent');
-    });
-    
     // Profile (Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
