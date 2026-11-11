@@ -88,7 +88,7 @@
         if (!items.length) {
             const ok = document.createElement('div');
             ok.className = 'alert alert-success mb-0';
-            ok.textContent = 'No items are below their reorder level.';
+            ok.textContent = 'No items are running low on stock.';
             els.alerts.appendChild(ok);
             return;
         }
@@ -104,7 +104,7 @@
             info.appendChild(strong);
             info.appendChild(document.createElement('br'));
             const small = document.createElement('small');
-            small.textContent = `${p.category || ''} - reorder level ${p.reorder_level}`;
+            small.textContent = `${p.category || ''} - low stock level ${p.reorder_level}`;
             info.appendChild(small);
 
             const badge = document.createElement('span');

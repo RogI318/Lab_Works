@@ -46,7 +46,7 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">LOW STOCK</h5>
                     <h2 id="statLowStock" class="card-text fw-bold text-warning">{{ number_format($lowStockCount) }}</h2>
-                    <small>At or below reorder level</small>
+                    <small>At or below the low stock level</small>
                 </div>
             </div>
         </div>
@@ -75,7 +75,7 @@
         <div class="col-lg-6 mb-4">
             <div class="card shadow-hover h-100">
                 <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-bell me-1"></i>Reorder Alerts</h5>
+                    <h5 class="mb-0"><i class="bi bi-bell me-1"></i>Low Stock Alerts</h5>
                     <a href="{{ route('products.index', ['status' => 'Low Stock']) }}" class="btn btn-light btn-sm">View all</a>
                 </div>
                 <div class="card-body">
@@ -84,13 +84,13 @@
                             <div class="alert alert-warning d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong><a href="{{ route('products.show', $product) }}" class="text-decoration-none">{{ $product->name }}</a></strong>
-                                    <br><small>{{ $product->category->name }} - reorder level {{ $product->reorder_level }}</small>
+                                    <br><small>{{ $product->category->name }} - low stock level {{ $product->reorder_level }}</small>
                                 </div>
                                 <span class="badge bg-dark">{{ $product->quantity }} left</span>
                             </div>
                         @empty
                             <div class="alert alert-success mb-0">
-                                <i class="bi bi-check-circle me-1"></i>No items are below their reorder level.
+                                <i class="bi bi-check-circle me-1"></i>No items are running low on stock.
                             </div>
                         @endforelse
 

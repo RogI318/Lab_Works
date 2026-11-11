@@ -133,6 +133,15 @@
                                 Reports
                             </a>
                         </li>
+                        {{-- Lab 5 (latest): admins maintain accounts here, since registration is closed. --}}
+                        @if ($navUser->is_admin)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+                                   href="{{ route('users.index') }}">
+                                    Manage Users
+                                </a>
+                            </li>
+                        @endif
                         <li class="nav-item mt-2">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

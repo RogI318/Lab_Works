@@ -68,7 +68,7 @@ class ReportController extends Controller
     {
         return $this->csv(
             'low_stock_report_' . now()->format('Y_m_d') . '.csv',
-            ['SKU', 'Product', 'Category', 'On Hand', 'Reorder Level', 'Deficit', 'Suggested Order', 'Unit Price', 'Status'],
+            ['SKU', 'Product', 'Category', 'On Hand', 'Low Stock Level', 'Deficit', 'Suggested Order', 'Unit Price', 'Status'],
             $this->lowStockReport()->map(fn (Product $p) => [
                 $p->sku,
                 $p->name,
@@ -98,7 +98,7 @@ class ReportController extends Controller
 
         return $this->csv(
             'inventory_valuation_' . now()->format('Y_m_d') . '.csv',
-            ['SKU', 'Item', 'Category', 'Brand', 'Supplier', 'Qty', 'Reorder Level', 'Unit Price', 'Total Value', 'Status'],
+            ['SKU', 'Item', 'Category', 'Brand', 'Supplier', 'Qty', 'Low Stock Level', 'Unit Price', 'Total Value', 'Status'],
             $rows
         );
     }

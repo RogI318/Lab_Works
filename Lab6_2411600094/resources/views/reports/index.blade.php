@@ -140,7 +140,7 @@
         <div class="tab-pane fade {{ $report === 'low-stock' ? 'show active' : '' }}" id="report-low-stock">
             <div class="card shadow-hover">
                 <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Low Stock Report <span class="small fw-normal opacity-75">(at or below reorder level)</span></h5>
+                    <h5 class="mb-0">Low Stock Report <span class="small fw-normal opacity-75">(at or below the low stock level)</span></h5>
                     <span class="badge bg-light text-dark">{{ $lowStockReport->count() }} item(s)</span>
                 </div>
                 <div class="card-body">
@@ -149,7 +149,7 @@
                             <thead>
                                 <tr>
                                     <th>SKU</th><th>Item</th><th>Category</th><th>Supplier</th>
-                                    <th class="text-end">On Hand</th><th class="text-end">Reorder Level</th>
+                                    <th class="text-end">On Hand</th><th class="text-end">Low Stock Level</th>
                                     <th class="text-end">Deficit</th>
                                     <th class="text-end">Suggested Qty</th>
                                     <th class="text-end">Est. Cost (PHP)</th><th>Status</th>
@@ -178,7 +178,7 @@
                                     </tr>
                                 @empty
                                     <tr><td colspan="11" class="text-center text-success py-4">
-                                        <i class="bi bi-check-circle me-1"></i>Every item is above its reorder level.
+                                        <i class="bi bi-check-circle me-1"></i>No items are running low on stock.
                                     </td></tr>
                                 @endforelse
                             </tbody>
@@ -257,7 +257,7 @@
                                     <span class="fw-bold">{{ number_format($totals['units']) }}</span>
                                 </li>
                                 <li class="d-flex justify-content-between py-2">
-                                    <span>Items at or below reorder level</span>
+                                    <span>Items at or below the low stock level</span>
                                     <span class="fw-bold text-warning">{{ number_format($lowStockReport->count()) }}</span>
                                 </li>
                             </ul>

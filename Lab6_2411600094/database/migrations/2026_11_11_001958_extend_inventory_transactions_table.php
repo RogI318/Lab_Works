@@ -14,7 +14,14 @@ return new class extends Migration
     {
         // CHANGE COLUMN works on both MySQL and MariaDB, so the Lab 5
         // "reference" column becomes the docx's "reference_number" in place.
-        DB::statement("ALTER TABLE inventory_transactions CHANGE `reference` `reference_number` VARCHAR(255) NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE inventory_transactions CHANGE `reference` `reference_number` VARCHAR(255) NULL");
+        } else {
+            // SQLite (used by the test suite) has no CHANGE COLUMN.
+            Schema::table('inventory_transactions', function (Blueprint $table) {
+                $table->renameColumn('reference', 'reference_number');
+            });
+        }
 
         Schema::table('inventory_transactions', function (Blueprint $table) {
             $table->text('notes')->nullable()->after('reference_number');
