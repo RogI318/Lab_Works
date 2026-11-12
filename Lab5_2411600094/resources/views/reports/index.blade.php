@@ -114,7 +114,7 @@
         {{-- ===== Brands ===== --}}
         <div class="col-lg-6 mb-4">
             <div class="card shadow-hover h-100">
-                <div class="card-header bg-light"><h5 class="mb-0">Valuation by Brand</h5></div>
+                <div class="card-header bg-gradient-primary text-white"><h5 class="mb-0">Valuation by Brand</h5></div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-sm table-striped align-middle mb-0">
@@ -139,7 +139,7 @@
         {{-- ===== Suppliers ===== --}}
         <div class="col-lg-6 mb-4">
             <div class="card shadow-hover h-100">
-                <div class="card-header bg-light"><h5 class="mb-0">Spend Exposure by Supplier</h5></div>
+                <div class="card-header bg-gradient-primary text-white"><h5 class="mb-0">Spend Exposure by Supplier</h5></div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-sm table-striped align-middle mb-0">
