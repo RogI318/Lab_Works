@@ -38,7 +38,7 @@
             ['Inventory Value (PHP)', number_format($totals['value'], 2), 'border-success-custom'],
             ['Low Stock Items', number_format($totals['low_stock']), 'border-warning-custom'],
             ['Out of Stock Items', number_format($totals['out_of_stock']), 'border-danger-custom'],
-            ['Units Issued', number_format($totals['stock_out_units']), 'border-accent'],
+            ['Units Sold', number_format($totals['stock_out_units']), 'border-accent'],
         ] as [$label, $value, $border])
             <div class="col-md mb-3">
                 <div class="card stat-card text-center shadow-hover {{ $border }}">
@@ -313,7 +313,7 @@
                                     <span class="text-success fw-bold">+{{ number_format($totals['stock_in_units']) }}</span>
                                 </li>
                                 <li class="d-flex justify-content-between border-bottom py-2">
-                                    <span>Units issued (all time)</span>
+                                    <span>Units sold (all time)</span>
                                     <span class="text-danger fw-bold">-{{ number_format($totals['stock_out_units']) }}</span>
                                 </li>
                                 <li class="d-flex justify-content-between border-bottom py-2">

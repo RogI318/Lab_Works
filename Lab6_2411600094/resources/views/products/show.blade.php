@@ -105,7 +105,7 @@
                         <span class="fw-bold text-success">{{ number_format($product->transactions()->where('type', 'in')->sum('quantity')) }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Units issued</span>
+                        <span>Units sold</span>
                         <span class="fw-bold text-danger">{{ number_format($product->transactions()->where('type', 'out')->sum('quantity')) }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
