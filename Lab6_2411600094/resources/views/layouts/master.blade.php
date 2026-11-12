@@ -28,8 +28,8 @@
                 @php
                     $navUser = Auth::user();
                     $unreadCount = $navUser->unreadNotifications()->count();
-                    $recentAlerts = $navUser->unreadNotifications()
-                        ->latest('created_at')->take(5)->get();
+                    $recentAlerts = $navUser->notifications()
+                        ->latest('created_at')->take(15)->get();
                 @endphp
                 <ul class="navbar-nav ms-auto align-items-start align-items-lg-center">
 
@@ -38,22 +38,31 @@
                         <a class="nav-link position-relative" href="#" role="button"
                            data-bs-toggle="dropdown" aria-label="Notifications">
                             <i class="bi bi-bell fs-5"></i>
-                            @if ($unreadCount > 0)
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    {{ $unreadCount > 9 ? '9+' : $unreadCount }}
-                                </span>
-                            @endif
+                            <span id="notifBadge"
+                                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $unreadCount > 0 ? '' : 'd-none' }}">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
                         </a>
-                        <div class="dropdown-menu dropdown-menu-end shadow" style="min-width: 320px;">
-                            <h6 class="dropdown-header"><i class="bi bi-exclamation-triangle me-1"></i>Low stock alerts</h6>
+                        <div class="dropdown-menu dropdown-menu-end shadow" style="min-width: 340px;">
+                            <h6 class="dropdown-header"><i class="bi bi-exclamation-triangle me-1"></i>Low stock alerts ({{ $unreadCount }} unread)</h6>
+                            <div style="max-height: 320px; overflow-y: auto;">
                             @forelse ($recentAlerts as $alert)
-                                <a class="dropdown-item text-truncate" href="{{ route('notifications.show', $alert->id) }}">
+                                @php
+                                    $isOut    = (int) ($alert->data['quantity'] ?? 1) <= 0;
+                                    $isUnread = is_null($alert->read_at);
+                                    $accent   = $isOut ? '#dc3545' : '#ffc107';
+                                    $tint     = $isOut ? '#f8d7da' : '#fff3cd';
+                                @endphp
+                                <a class="dropdown-item text-wrap {{ $isUnread ? 'fw-semibold' : 'text-muted' }}"
+                                   href="{{ route('notifications.show', $alert->id) }}"
+                                   style="border-left: 5px solid {{ $accent }}; {{ $isUnread ? 'background:'.$tint.';' : 'opacity:.7;' }}">
+                                    <i class="bi {{ $isOut ? 'bi-x-octagon-fill text-danger' : 'bi-exclamation-triangle-fill text-warning' }} me-1"></i>
                                     {{ $alert->data['subject'] ?? 'Inventory alert' }}
+                                    @if ($isUnread)<span class="badge bg-danger ms-1">New</span>@endif
                                     <small class="text-muted d-block">{{ $alert->created_at->diffForHumans() }}</small>
                                 </a>
                             @empty
-                                <p class="dropdown-item text-muted small mb-0">No unread alerts.</p>
+                                <p class="dropdown-item text-muted small mb-0">No alerts yet.</p>
                             @endforelse
+                            </div>
                             <div class="dropdown-divider"></div>
                             <form method="POST" action="{{ route('notifications.readAll') }}">
                                 @csrf @method('PUT')

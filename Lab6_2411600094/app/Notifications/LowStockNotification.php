@@ -18,6 +18,9 @@ class LowStockNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    /** A failed e-mail (bad SMTP login, no internet) is retried, never fatal. */
+    public int $tries = 3;
+
     public function __construct(public Product $product)
     {
     }
@@ -25,6 +28,21 @@ class LowStockNotification extends Notification implements ShouldQueue
     public function via(object $notifiable): array
     {
         return ['database', 'mail'];
+    }
+
+    /**
+     * The bell (database channel) must appear the moment stock drops, so it
+     * runs on the `sync` connection. Only the e-mail goes through the queue
+     * (php artisan queue:work), exactly as Part 6 of the docx describes.
+     * Without this, a queued database notification stays in the jobs table
+     * until a worker runs and the bell looks "broken".
+     */
+    public function viaConnections(): array
+    {
+        return [
+            'database' => 'sync',
+            'mail'     => config('queue.default'),
+        ];
     }
 
     /** Suggested reorder amount: bring the item back up to 2x its threshold. */
@@ -36,7 +54,8 @@ class LowStockNotification extends Notification implements ShouldQueue
     public function toDatabase(object $notifiable): array
     {
         return [
-            'subject'        => "Low stock: {$this->product->name}",
+            'subject'        => ($this->product->quantity <= 0 ? 'Out of stock: ' : 'Low stock: ')
+                                . $this->product->name,
             'message'        => sprintf(
                 '%s (%s) is at %d unit(s), reorder level is %d. Suggested action: reorder %d unit(s).',
                 $this->product->name,

@@ -5,9 +5,15 @@
 @section('content')
 
     @php
-        $exportUrl = fn (string $type) => route('reports.export', [
-            'report' => $type, 'date_from' => $range[0], 'date_to' => $range[1],
-        ]);
+        $exportUrl = fn (string $type) => route('reports.export', array_filter([
+            'report'      => $type,
+            'date_from'   => $range[0],
+            'date_to'     => $range[1],
+            'product_id'  => $type === 'movement' ? $filters['product_id'] : null,
+            'type'        => $type === 'movement' ? $filters['type'] : null,
+            'category_id' => $type === 'low-stock' ? $filters['category_id'] : null,
+            'search'      => $type === 'low-stock' ? $filters['search'] : null,
+        ]));
         $tabs = [
             'valuation' => 'Inventory Valuation',
             'movement'  => 'Stock Movement',
@@ -19,14 +25,9 @@
         <div>
             <h2 class="fw-bold mb-0">Inventory Reports</h2>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ $exportUrl($report) }}" class="btn btn-success">
-                <i class="bi bi-download me-1"></i>Download {{ $tabs[$report] }} CSV
-            </a>
-            <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Inventory
-            </a>
-        </div>
+        <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Inventory
+        </a>
     </div>
 
     {{-- ===== Headline figures ===== --}}
@@ -64,31 +65,64 @@
 
         {{-- ---------- Stock Movement ---------- --}}
         <div class="tab-pane fade {{ $report === 'movement' ? 'show active' : '' }}" id="report-movement">
+
+            {{-- Filter panel: same layout as the Lab 5 roster filter --}}
+            <div class="card shadow-hover mb-4">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">Filter Stock Movements</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ route('reports.index') }}" class="row g-3 align-items-end">
+                        <input type="hidden" name="report" value="movement">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Product</label>
+                            <select name="product_id" class="form-select">
+                                <option value="">All Products</option>
+                                @foreach($filterProducts as $p)
+                                    <option value="{{ $p->id }}" @selected($filters["product_id"] == $p->id)>{{ $p->name }} ({{ $p->sku }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Type</label>
+                            <select name="type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="in" @selected($filters['type'] === 'in')>Stock In</option>
+                                <option value="out" @selected($filters['type'] === 'out')>Stock Out</option>
+                                <option value="adjustment" @selected($filters['type'] === 'adjustment')>Adjustment</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">From</label>
+                            <input type="date" name="date_from" class="form-control" value="{{ $range[0] }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">To</label>
+                            <input type="date" name="date_to" class="form-control" value="{{ $range[1] }}">
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <button class="btn btn-primary flex-grow-1" type="submit"><i class="bi bi-search"></i></button>
+                            <a href="{{ route('reports.index', ['report' => 'movement']) }}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="card shadow-hover">
                 <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">Stock Movement Report</h5>
-                    <form method="GET" action="{{ route('reports.index') }}" class="d-flex align-items-end gap-2">
-                        <input type="hidden" name="report" value="movement">
-                        <div>
-                            <label class="form-label small mb-1 text-white">From</label>
-                            <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $range[0] }}">
-                        </div>
-                        <div>
-                            <label class="form-label small mb-1 text-white">To</label>
-                            <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $range[1] }}">
-                        </div>
-                        <button class="btn btn-sm btn-light text-nowrap" type="submit">
-                            <i class="bi bi-funnel me-1"></i> Run
-                        </button>
-                        <a href="{{ $exportUrl('movement') }}" class="btn btn-sm btn-outline-light text-nowrap">
-                            <i class="bi bi-download me-1"></i> CSV
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="badge bg-light text-dark">
+                            {{ number_format($movement->count()) }} movement{{ $movement->count() !== 1 ? 's' : '' }}
+                        </span>
+                        <a href="{{ $exportUrl('movement') }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-download me-1"></i>Export CSV
                         </a>
-                    </form>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-4 small text-muted mb-3">
                         <span>Window: <strong>{{ $range[0] }}</strong> to <strong>{{ $range[1] }}</strong></span>
-                        <span>Movements: <strong>{{ number_format($movement->count()) }}</strong></span>
                         <span>Units in: <strong class="text-success">+{{ number_format($movement->sum(fn ($t) => max(0, $t->signedQuantity()))) }}</strong></span>
                         <span>Units out: <strong class="text-danger">{{ number_format($movement->sum(fn ($t) => min(0, $t->signedQuantity()))) }}</strong></span>
                         <span>Adjustments: <strong>{{ number_format($movement->where('type', 'adjustment')->sum(fn ($t) => $t->signedQuantity())) }}</strong></span>
@@ -138,10 +172,45 @@
 
         {{-- ---------- Low Stock ---------- --}}
         <div class="tab-pane fade {{ $report === 'low-stock' ? 'show active' : '' }}" id="report-low-stock">
+
+            <div class="card shadow-hover mb-4">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">Filter Low Stock Items</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ route('reports.index') }}" class="row g-3 align-items-end">
+                        <input type="hidden" name="report" value="low-stock">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Search</label>
+                            <input type="text" name="search" class="form-control"
+                                   placeholder="Name, SKU or supplier..." value="{{ $filters['search'] }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Category</label>
+                            <select name="category_id" class="form-select">
+                                <option value="">All Categories</option>
+                                @foreach($filterCategories as $c)
+                                    <option value="{{ $c->id }}" @selected($filters["category_id"] == $c->id)>{{ $c->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <button class="btn btn-primary flex-grow-1" type="submit"><i class="bi bi-search"></i></button>
+                            <a href="{{ route('reports.index', ['report' => 'low-stock']) }}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="card shadow-hover">
-                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">Low Stock Report <span class="small fw-normal opacity-75">(at or below the low stock level)</span></h5>
-                    <span class="badge bg-light text-dark">{{ $lowStockReport->count() }} item(s)</span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="badge bg-light text-dark">{{ $lowStockReport->count() }} item(s)</span>
+                        <a href="{{ $exportUrl('low-stock') }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-download me-1"></i>Export CSV
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -183,11 +252,6 @@
                                 @endforelse
                             </tbody>
                         </table>
-                    </div>
-                    <div class="mt-3">
-                        <a href="{{ $exportUrl('low-stock') }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-download me-1"></i>Download Low Stock CSV
-                        </a>
                     </div>
                 </div>
             </div>

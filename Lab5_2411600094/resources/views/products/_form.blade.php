@@ -165,7 +165,7 @@
             const serverPicked = @json(array_filter(['brand_id' => session('new_brand_id'), 'category_id' => session('new_category_id')]));
 
             if (fromProductForm || !fromPopup) {
-                sessionStorage.removeItem(key);          // fresh visit or server input: no stale draft
+                sessionStorage.removeItem(key);          
             } else {
                 const draft = JSON.parse(sessionStorage.getItem(key) || 'null');
                 if (draft) {

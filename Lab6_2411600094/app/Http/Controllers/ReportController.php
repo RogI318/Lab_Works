@@ -20,13 +20,18 @@ class ReportController extends Controller
 
     public function index(Request $request)
     {
-        $range = $this->range($request);
+        $range   = $this->range($request);
+        $filters = $this->filters($request);
 
         return view('reports.index', [
             'report'         => in_array($request->report, self::TYPES) ? $request->report : 'valuation',
             'range'          => $range,
-            'movement'       => $this->movementRows($range[0], $range[1]),
-            'lowStockReport' => $this->lowStockReport(),
+            'filters'        => $filters,
+            'movement'       => $this->movementRows($range[0], $range[1], $filters),
+            'lowStockReport' => $this->lowStockReport($filters),
+            // dropdown data for the Lab 5 style filter panels
+            'filterProducts'   => Product::orderBy('name')->get(['id', 'name', 'sku']),
+            'filterCategories' => Category::orderBy('name')->get(['id', 'name']),
         ] + $this->reportData());
     }
 
@@ -34,22 +39,22 @@ class ReportController extends Controller
     public function export(Request $request): StreamedResponse
     {
         return match (in_array($request->report, self::TYPES) ? $request->report : 'valuation') {
-            'movement'  => $this->exportMovement($this->range($request)),
-            'low-stock' => $this->exportLowStock(),
+            'movement'  => $this->exportMovement($this->range($request), $this->filters($request)),
+            'low-stock' => $this->exportLowStock($this->filters($request)),
             default     => $this->exportValuation(),
         };
     }
 
     /* ---------- Part 9 exports ---------- */
 
-    private function exportMovement(array $range): StreamedResponse
+    private function exportMovement(array $range, array $filters = []): StreamedResponse
     {
         [$from, $to] = $range;
 
         return $this->csv(
             "stock_movement_{$from}_to_{$to}.csv",
             ['Date', 'Time', 'SKU', 'Product', 'Type', 'Reason', 'Qty change', 'Balance after', 'Reference', 'Recorded by'],
-            $this->movementRows($from, $to)->map(fn (InventoryTransaction $t) => [
+            $this->movementRows($from, $to, $filters)->map(fn (InventoryTransaction $t) => [
                 $t->created_at->toDateString(),
                 $t->created_at->format('H:i'),
                 $t->product->sku,
@@ -64,12 +69,12 @@ class ReportController extends Controller
         );
     }
 
-    private function exportLowStock(): StreamedResponse
+    private function exportLowStock(array $filters = []): StreamedResponse
     {
         return $this->csv(
             'low_stock_report_' . now()->format('Y_m_d') . '.csv',
             ['SKU', 'Product', 'Category', 'On Hand', 'Low Stock Level', 'Deficit', 'Suggested Order', 'Unit Price', 'Status'],
-            $this->lowStockReport()->map(fn (Product $p) => [
+            $this->lowStockReport($filters)->map(fn (Product $p) => [
                 $p->sku,
                 $p->name,
                 $p->category->name,
@@ -111,27 +116,46 @@ class ReportController extends Controller
      * that stood after it. The balances come from Product::transactionHistory()
      * so the report and the product page can never disagree.
      */
-    private function movementRows(?string $from, ?string $to): \Illuminate\Support\Collection
+    private function movementRows(?string $from, ?string $to, array $filters = []): \Illuminate\Support\Collection
     {
         return Product::query()
+            ->when($filters['product_id'] ?? null, fn ($q, $id) => $q->whereKey($id))
             ->orderBy('name')
             ->get()
             ->flatMap(function (Product $product) use ($from, $to) {
                 return $product->transactionHistory($from, $to)
                     ->each(fn (InventoryTransaction $t) => $t->setRelation('product', $product));
             })
+            ->when($filters['type'] ?? null, fn ($c, $type) => $c->where('type', $type))
             ->sortBy(fn (InventoryTransaction $t) => [$t->created_at->timestamp, $t->id])
             ->values();
     }
 
     /** docx wording: products at or below their reorder level, empties first. */
-    private function lowStockReport(): \Illuminate\Support\Collection
+    private function lowStockReport(array $filters = []): \Illuminate\Support\Collection
     {
         return Product::with('category')
             ->belowReorderLevel()
+            ->when($filters['category_id'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
+            ->when($filters['search'] ?? null, fn ($q, $term) => $q->where(
+                fn ($w) => $w->where('name', 'like', "%{$term}%")
+                             ->orWhere('sku', 'like', "%{$term}%")
+                             ->orWhere('supplier', 'like', "%{$term}%")
+            ))
             ->orderBy('quantity')
             ->orderBy('name')
             ->get();
+    }
+
+    /** The Lab 5 style filter panel inputs (all optional). */
+    private function filters(Request $request): array
+    {
+        return [
+            'product_id'  => $request->filled('product_id') ? (int) $request->product_id : null,
+            'type'        => in_array($request->type, InventoryTransaction::TYPES) ? $request->type : null,
+            'category_id' => $request->filled('category_id') ? (int) $request->category_id : null,
+            'search'      => trim((string) $request->search) ?: null,
+        ];
     }
 
     /** Default window = the last 30 days, so the report opens on something. */

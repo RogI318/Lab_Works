@@ -68,13 +68,21 @@ class InventoryTransactionObserver
             $transaction->product()->increment('quantity', $delta);
             $product->refresh();
 
-            // Part 6 Step 3 — low stock alert when the movement crosses the
-            // threshold from above. The crossing (not the state) is the
-            // trigger, which is also the duplicate suppression: further
-            // drawdowns while ALREADY low do not re-alert, but a refill
-            // back above the level arms it again.
-            if ($delta < 0 && $before > $product->reorder_level && $after <= $product->reorder_level) {
-                Notification::send(User::admins()->get(), new LowStockNotification($product));
+            // Part 6 Step 3 — after a stock-OUT (or negative adjustment) check
+            // whether the product is now at or below its reorder level.
+            // Duplicate suppression: an admin who already has an UNREAD alert
+            // for this product is skipped; once they read it (or the product
+            // is refilled and drops again) a new alert can be raised.
+            if ($delta < 0 && $product->isLowStock()) {
+                $recipients = User::admins()->get()->reject(
+                    fn (User $admin) => $admin->unreadNotifications->contains(
+                        fn ($n) => ($n->data['product_id'] ?? null) === $product->id
+                    )
+                );
+
+                if ($recipients->isNotEmpty()) {
+                    Notification::send($recipients, new LowStockNotification($product));
+                }
             }
         });
     }

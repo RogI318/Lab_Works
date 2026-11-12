@@ -22,6 +22,7 @@
         moves:     document.getElementById('recentMovesBody'),
         updated:   document.getElementById('lastUpdated'),
         status:    document.getElementById('liveStatus'),
+        badge:     document.getElementById('notifBadge'),
     };
 
     function setStatus(text, className) {
@@ -71,6 +72,12 @@
         animateValue(els.out, d.out_of_stock_count);
         animateValue(els.value, d.inventory_value, 2);
         if (els.updated) els.updated.textContent = new Date().toLocaleTimeString();
+
+        // Notification bell: new low-stock alerts show up without a reload.
+        if (els.badge && typeof d.unread_alerts === 'number') {
+            els.badge.textContent = d.unread_alerts > 9 ? '9+' : d.unread_alerts;
+            els.badge.classList.toggle('d-none', d.unread_alerts === 0);
+        }
     }
 
     function link(name, href, cls) {

@@ -6,12 +6,15 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
+use App\Notifications\LowStockNotification;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        $this->syncLowStockAlerts();
+
         // ---- Stat cards (Part 7, Step 2 of the lab manual) ----
         $totalProducts   = Product::count();
         $lowStockCount   = Product::lowStock()->count();
@@ -83,5 +86,30 @@ class DashboardController extends Controller
             'lowStockItems', 'outOfStockItems', 'unitsByCategory', 'statusDist', 'valueByCategory',
             'movementDays', 'recentProducts', 'recentMoves', 'brands', 'categories'
         ));
+    }
+
+    /**
+     * Keep the bell in step with the dashboard's Low Stock Alerts panel:
+     * every product already at/below its reorder level gets an alert for the
+     * admin opening the page, unless that admin still has an unread one for
+     * it (so reloading never creates duplicates).
+     */
+    private function syncLowStockAlerts(): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->is_admin) {
+            return;
+        }
+
+        $alreadyAlerted = $user->unreadNotifications
+            ->pluck('data.product_id')
+            ->filter()
+            ->all();
+
+        Product::belowReorderLevel()
+            ->whereNotIn('id', $alreadyAlerted)
+            ->get()
+            ->each(fn (Product $product) => $user->notify(new LowStockNotification($product)));
     }
 }
