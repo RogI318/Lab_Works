@@ -1,9 +1,9 @@
 # Laboratory Exercise 5 — Implementing MVC Architecture with Laravel
-## Student Portal · Campus Supplies Inventory (Inventory Management System)
+## RogieMart Hardware — Inventory Management System (construction materials)
 
-Laravel 12 + Breeze (Blade stack) inventory system for a campus supplies centre:
-products, brands, categories and an `inventory_transactions` ledger, themed with the
-Lab 4 pink Bootstrap 5 palette.
+Laravel 12 + Breeze (Blade stack) inventory system for a hardware store selling
+construction materials: products, brands, categories and an `inventory_transactions`
+ledger, themed with the Lab 4 pink Bootstrap 5 palette.
 
 ---
 
@@ -58,7 +58,7 @@ php artisan tinker
 >>> use Illuminate\Support\Facades\Hash;
 
 >>> User::create([
-        'name'              => 'Supply Centre Admin',
+        'name'              => 'RogieMart Admin',
         'email'             => 'admin@example.com',
         'password'          => Hash::make('password123'),
         'email_verified_at' => now(),
@@ -68,7 +68,9 @@ php artisan tinker
 >>> exit
 ```
 
-Login with **admin@example.com / password123**. The `User` model casts `password` to
+Login with **admin@example.com / password123** (or the seeded account
+`reyzlyn588@gmail.com / password123`, created as "RogieMart Admin" by `DatabaseSeeder`).
+The `User` model casts `password` to
 `hashed`, so `DatabaseSeeder` can pass the plain string and the same hash is produced.
 
 ## Part 3 — Models, migrations & relationships
@@ -150,10 +152,12 @@ and a "N brands / N categories" badge), and Chart.js charts.
 
 ## Part 8 — Seeders
 
-`CategorySeeder` (Books & Modules, Stationery, Lab Equipment, IT Peripherals,
-Uniforms & Merch, Sports & PE) and `BrandSeeder` (10 school-supply brands) run **before**
-`ProductSeeder`, which creates 25 products — a mix of in-stock, low-stock and out-of-stock
-— each linked to a brand and a category, and posts the matching `in` / `out` transactions.
+`CategorySeeder` (Lumber, Hardware, Tools, Electrical, Plumbing, Paint) and `BrandSeeder`
+(12 hardware brands: Stanley, Makita, Bosch, DeWalt, Boysen, Davies, Philips, Firefly,
+Omni Power, Plytech, Marson, Dover) run **before**
+`ProductSeeder`, which creates 23 hardware products — a mix of in-stock, low-stock and
+out-of-stock — each linked to a brand and a category, and posts the matching `in` / `out`
+transactions (purchase orders and sales orders).
 
 ```bash
 php artisan migrate:fresh --seed

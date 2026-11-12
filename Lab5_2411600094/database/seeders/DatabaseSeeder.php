@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'reyzlyn588@gmail.com'],
             [
-                'name'              => 'Supply Centre Admin',
+                'name'              => 'RogieMart Admin',
                 'password'          => 'password123',   // hashed by the User model cast
                 'email_verified_at' => now(),
                 'is_admin'          => true,
