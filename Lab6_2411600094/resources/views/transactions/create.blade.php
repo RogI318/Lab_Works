@@ -25,7 +25,7 @@
                             <label for="product_id" class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
                             <select name="product_id" id="product_id"
                                     class="form-select @error('product_id') is-invalid @enderror" required>
-                                <option value="">-- choose a product --</option>
+                                <option value=""></option>
                                 @foreach($products as $product)
                                     <option value="{{ $product->id }}" @selected(old('product_id') == $product->id)>
                                         {{ $product->name }} ({{ $product->sku }})
@@ -122,7 +122,7 @@
         const quantityHint = document.getElementById('quantityHint');
 
         new jQuery(productSelect).select2({
-            theme: 'default', width: '100%', placeholder: '-- choose a product --', allowClear: false
+            theme: 'default', width: '100%', placeholder: '', allowClear: false
         });
 
         function refreshStockInfo() {

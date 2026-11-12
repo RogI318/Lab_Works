@@ -35,11 +35,14 @@
 
                     {{-- Lab 6 Part 5 Step 1: notification bell --}}
                     <li class="nav-item dropdown me-lg-2">
-                        <a class="nav-link position-relative" href="#" role="button"
+                        <a class="nav-link" href="#" role="button"
                            data-bs-toggle="dropdown" aria-label="Notifications">
-                            <i class="bi bi-bell fs-5"></i>
-                            <span id="notifBadge"
-                                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $unreadCount > 0 ? '' : 'd-none' }}">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
+                            {{-- Badge anchors to the icon itself, not the padded nav-link --}}
+                            <span class="position-relative d-inline-flex">
+                                <i class="bi bi-bell fs-5"></i>
+                                <span id="notifBadge"
+                                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ $unreadCount > 0 ? '' : 'd-none' }}">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
+                            </span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end shadow" style="min-width: 340px;">
                             <h6 class="dropdown-header"><i class="bi bi-exclamation-triangle me-1"></i>Low stock alerts ({{ $unreadCount }} unread)</h6>

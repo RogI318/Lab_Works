@@ -25,7 +25,7 @@
                             <th>Email</th>
                             <th>Role</th>
                             <th>Created</th>
-                            <th style="width: 120px;">Actions</th>
+                            <th style="width: 150px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -46,14 +46,21 @@
                                 </td>
                                 <td class="small text-muted">{{ $user->created_at?->format('M d, Y') }}</td>
                                 <td class="text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-info text-white" title="View"
+                                            data-bs-toggle="modal" data-bs-target="#user-view-{{ $user->id }}">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-warning" title="Edit"
                                             data-bs-toggle="modal" data-bs-target="#user-edit-{{ $user->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-danger" title="Delete"
-                                            data-bs-toggle="modal" data-bs-target="#user-delete-{{ $user->id }}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    {{-- An admin can only view and edit their own account; no delete button on their own row. --}}
+                                    @unless ($user->is(auth()->user()))
+                                        <button type="button" class="btn btn-sm btn-danger" title="Delete"
+                                                data-bs-toggle="modal" data-bs-target="#user-delete-{{ $user->id }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    @endunless
                                 </td>
                             </tr>
                         @endforeach
@@ -134,7 +141,75 @@
             $editKey    = "user-edit-{$user->id}";
             $editOpened = old('modal_key') === $editKey;
             $deleteKey  = "user-delete-{$user->id}";
+            $viewKey    = "user-view-{$user->id}";
         @endphp
+
+        {{-- ===== View User modal ===== --}}
+        <div class="modal fade" id="{{ $viewKey }}" tabindex="-1" aria-labelledby="{{ $viewKey }}Label" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0">
+                    <div class="modal-header bg-gradient-primary text-white">
+                        <h5 class="modal-title" id="{{ $viewKey }}Label"><i class="bi bi-person-badge me-1"></i> User Details</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="text-center mb-3">
+                            <div class="rounded-circle bg-gradient-primary text-white d-inline-flex align-items-center justify-content-center fw-bold"
+                                 style="width: 64px; height: 64px; font-size: 1.6rem;">
+                                {{ strtoupper(mb_substr($user->name, 0, 1)) }}
+                            </div>
+                            <h5 class="mt-2 mb-0">
+                                {{ $user->name }}
+                                @if ($isSelf)
+                                    <span class="badge bg-secondary ms-1">You</span>
+                                @endif
+                            </h5>
+                            <span class="badge {{ $user->is_admin ? 'bg-primary' : 'bg-secondary' }}">
+                                {{ $user->is_admin ? 'Admin' : 'User' }}
+                            </span>
+                        </div>
+
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <th class="text-muted fw-semibold" style="width: 40%;">User ID</th>
+                                    <td>#{{ $user->id }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted fw-semibold">Name</th>
+                                    <td>{{ $user->name }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted fw-semibold">Email</th>
+                                    <td>{{ $user->email }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted fw-semibold">Role</th>
+                                    <td>{{ $user->is_admin ? 'Administrator (can manage users)' : 'Regular user' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted fw-semibold">Email Verified</th>
+                                    <td>{{ $user->email_verified_at ? $user->email_verified_at->format('M d, Y h:i A') : 'Not verified' }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted fw-semibold">Created</th>
+                                    <td>{{ $user->created_at?->format('M d, Y h:i A') }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted fw-semibold">Last Updated</th>
+                                    <td>{{ $user->updated_at?->format('M d, Y h:i A') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         {{-- ===== Edit User modal ===== --}}
         <div class="modal fade" id="{{ $editKey }}" tabindex="-1" aria-labelledby="{{ $editKey }}Label" aria-hidden="true">

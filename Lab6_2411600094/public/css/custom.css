@@ -169,6 +169,18 @@ button[type="submit"]:hover {
     background-color: #e85a7a;
 }
 
+/* Logout lives in menus, not forms: keep it on the light menu background
+   so its red label stays readable. */
+.sidebar button[type="submit"],
+.dropdown-menu button[type="submit"] {
+    background-color: transparent;
+    color: var(--bs-danger);
+}
+.sidebar button[type="submit"]:hover,
+.dropdown-menu button[type="submit"]:hover {
+    background-color: var(--theme-light-accent);
+}
+
 input[type="text"],
 input[type="email"],
 input[type="password"] {
@@ -201,6 +213,20 @@ a:hover {
     font-weight: 600;
 }
 .data-table tbody tr:hover { background-color: var(--theme-background); }
+
+/* Report tabs: theme pink instead of Bootstrap's default link blue */
+.nav-tabs .nav-link {
+    color: var(--theme-text);
+}
+.nav-tabs .nav-link:hover {
+    color: var(--theme-primary);
+    border-color: var(--theme-accent) var(--theme-accent) transparent;
+}
+.nav-tabs .nav-link.active {
+    color: var(--theme-primary);
+    border-top: 3px solid var(--theme-primary);
+    background-color: var(--theme-background);
+}
 
 #alertsList { max-height: 300px; overflow-y: auto; }
 #alertsList .alert {

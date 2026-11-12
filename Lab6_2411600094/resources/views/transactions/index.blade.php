@@ -80,9 +80,9 @@
                             <th>Product</th>
                             <th>Type</th>
                             <th class="text-end">Quantity</th>
-                            <th>Reference Number</th>
+                            <th class="ps-4">Reference Number</th>
                             <th>User</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -98,14 +98,14 @@
                                 <td class="text-end fw-bold {{ $transaction->signedQuantity() >= 0 ? 'text-success' : 'text-danger' }}">
                                     {{ $transaction->signedQuantity() >= 0 ? '+' : '' }}{{ $transaction->signedQuantity() }}
                                 </td>
-                                <td><code>{{ $transaction->reference_number ?: 'n/a' }}</code></td>
+                                <td class="ps-4 text-nowrap"><code>{{ $transaction->reference_number ?: 'n/a' }}</code></td>
                                 <td>{{ $transaction->user?->name ?? 'system' }}</td>
-                                <td class="text-end text-nowrap">
+                                <td class="text-center text-nowrap">
                                     <a href="{{ route('transactions.show', $transaction) }}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i> View
                                     </a>
                                     @if(auth()->user()->is_admin)
-                                        <form method="POST" action="{{ route('transactions.destroy', $transaction) }}" class="d-inline"
+                                        <form method="POST" action="{{ route('transactions.destroy', $transaction) }}" class="d-inline ms-1"
                                               onsubmit="return confirm('Delete transaction #{{ $transaction->id }}? This reverses its stock impact.');">
                                             @csrf @method('DELETE')
                                             <button class="btn btn-sm btn-outline-danger" type="submit">

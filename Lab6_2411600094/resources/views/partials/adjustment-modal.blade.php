@@ -13,7 +13,7 @@
 
             <div class="modal-header bg-gradient-primary text-white">
                 <h5 class="modal-title" id="{{ $modalKey }}Label">
-                    <i class="bi bi-clipboard-check me-1"></i> Stock Adjustment (Cycle Count)
+                    <i class="bi bi-clipboard-check me-1"></i> Stock Adjustment
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -24,12 +24,6 @@
                 <input type="hidden" name="modal_key" value="{{ $modalKey }}">
 
                 <div class="modal-body">
-                    <p class="text-muted small mb-4">
-                        Enter what is actually on the shelf. The system calculates the difference and writes it
-                        as an <span class="badge bg-info text-dark">Adjustment</span> transaction, which then
-                        updates the product quantity.
-                    </p>
-
                     <div class="row g-4">
                         <div class="col-md-7">
                             <div class="mb-3">
@@ -38,7 +32,7 @@
                                 </label>
                                 <select name="product_id" id="adjust_product_id"
                                         class="form-select @if($opened) @error('product_id') is-invalid @enderror @endif" required>
-                                    <option value="">-- choose a product --</option>
+                                    <option value=""></option>
                                     @foreach($products as $product)
                                         <option value="{{ $product->id }}" @selected($preselect === $product->id)>
                                             {{ $product->name }} ({{ $product->sku }})
@@ -58,7 +52,6 @@
                                            placeholder="select a product first">
                                     <span class="input-group-text">unit(s)</span>
                                 </div>
-                                <div class="form-text">Loaded live from the database, so an open page can't adjust against an old count.</div>
                             </div>
                         </div>
 
@@ -163,7 +156,7 @@
             theme: 'default',
             width: '100%',
             dropdownParent: document.getElementById('{{ $modalKey }}'),
-            placeholder: '-- choose a product --',
+            placeholder: '',
             allowClear: false,
         });
 

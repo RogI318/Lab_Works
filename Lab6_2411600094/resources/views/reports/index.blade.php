@@ -52,14 +52,19 @@
     </div>
 
     {{-- ===== Part 9 Step 2: one page, three reports ===== --}}
-    <ul class="nav nav-tabs mb-0">
-        @foreach($tabs as $key => $label)
-            <li class="nav-item">
-                <a class="nav-link {{ $report === $key ? 'active fw-semibold' : 'text-muted' }}"
-                   data-bs-toggle="tab" href="#report-{{ $key }}">{{ $label }}</a>
-            </li>
-        @endforeach
-    </ul>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-0">
+        <ul class="nav nav-tabs">
+            @foreach($tabs as $key => $label)
+                <li class="nav-item">
+                    <a class="nav-link {{ $report === $key ? 'active fw-semibold' : 'text-muted' }}"
+                       data-bs-toggle="tab" href="#report-{{ $key }}">{{ $label }}</a>
+                </li>
+            @endforeach
+        </ul>
+        <a href="{{ $exportUrl($report) }}" id="reportExportBtn" class="btn btn-success btn-sm">
+            <i class="bi bi-download me-1"></i>Export CSV
+        </a>
+    </div>
 
     <div class="tab-content bg-white border border-top-0 rounded-bottom p-3">
 
@@ -115,9 +120,6 @@
                         <span class="badge bg-light text-dark">
                             {{ number_format($movement->count()) }} movement{{ $movement->count() !== 1 ? 's' : '' }}
                         </span>
-                        <a href="{{ $exportUrl('movement') }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-download me-1"></i>Export CSV
-                        </a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -207,9 +209,6 @@
                     <h5 class="mb-0">Low Stock Report <span class="small fw-normal opacity-75">(at or below the low stock level)</span></h5>
                     <div class="d-flex gap-2 align-items-center">
                         <span class="badge bg-light text-dark">{{ $lowStockReport->count() }} item(s)</span>
-                        <a href="{{ $exportUrl('low-stock') }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-download me-1"></i>Export CSV
-                        </a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -331,7 +330,7 @@
 
                 <div class="col-lg-6 mb-4">
                     <div class="card shadow-hover h-100">
-                        <div class="card-header bg-light"><h5 class="mb-0">Valuation by Brand</h5></div>
+                        <div class="card-header bg-gradient-primary text-white"><h5 class="mb-0">Valuation by Brand</h5></div>
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-sm table-striped align-middle mb-0">
@@ -355,7 +354,7 @@
 
                 <div class="col-lg-6 mb-4">
                     <div class="card shadow-hover h-100">
-                        <div class="card-header bg-light"><h5 class="mb-0">Spend Exposure by Supplier</h5></div>
+                        <div class="card-header bg-gradient-primary text-white"><h5 class="mb-0">Spend Exposure by Supplier</h5></div>
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-sm table-striped align-middle mb-0">
@@ -376,14 +375,27 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="col-12">
-                    <a href="{{ $exportUrl('valuation') }}" class="btn btn-success btn-sm">
-                        <i class="bi bi-download me-1"></i>Download Inventory Valuation CSV
-                    </a>
-                </div>
             </div>
         </div>
     </div>
 
 @endsection
+
+@push('scripts')
+    <script>
+        (function () {
+            const exportUrls = {{ json_encode([
+                'valuation' => $exportUrl('valuation'),
+                'movement'  => $exportUrl('movement'),
+                'low-stock' => $exportUrl('low-stock'),
+            ]) }};
+            const btn = document.getElementById('reportExportBtn');
+            document.querySelectorAll('.nav-tabs .nav-link').forEach(function (tab) {
+                tab.addEventListener('shown.bs.tab', function (event) {
+                    const key = event.target.getAttribute('href').replace('#report-', '');
+                    if (exportUrls[key]) btn.setAttribute('href', exportUrls[key]);
+                });
+            });
+        })();
+    </script>
+@endpush

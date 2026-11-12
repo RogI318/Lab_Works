@@ -147,7 +147,7 @@
                             <th>Type</th>
                             <th class="text-end">Quantity</th>
                             <th class="text-end">Balance after</th>
-                            <th>Reference</th>
+                            <th class="ps-4">Reference</th>
                             <th>Handled by</th>
                         </tr>
                     </thead>
@@ -170,7 +170,7 @@
                                     {{ $transaction->signedQuantity() > 0 ? '+' : '' }}{{ number_format($transaction->signedQuantity()) }}
                                 </td>
                                 <td class="text-end fw-semibold">{{ number_format($transaction->balance_after) }}</td>
-                                <td><code>{{ $transaction->reference_number ?: 'n/a' }}</code></td>
+                                <td class="ps-4 text-nowrap"><code>{{ $transaction->reference_number ?: 'n/a' }}</code></td>
                                 <td>{{ $transaction->user->name ?? 'System' }}</td>
                             </tr>
                         @empty

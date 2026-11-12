@@ -22,8 +22,6 @@ return new class extends Migration
             });
         }
 
-        DB::table('users')->where('email', 'reyzlyn588@gmail.com')->update(['is_admin' => true]);
-
         // Nobody may be locked out of user management: if no admin exists,
         // the oldest account becomes one.
         if (! DB::table('users')->where('is_admin', true)->exists()) {
