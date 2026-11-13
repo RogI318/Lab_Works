@@ -40,7 +40,7 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">OUT OF STOCK</h5>
                     <h2 class="card-text fw-bold text-danger">{{ number_format($outOfStockCount) }}</h2>
-                    <small>Nothing left to issue</small>
+                    <small>Out of stock</small>
                 </div>
             </div>
         </div>

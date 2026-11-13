@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Portal - Login</title>
+    <title>RogieMart Hardware - Login</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
@@ -13,7 +13,7 @@
     <div class="container d-flex justify-content-center align-items-center min-vh-100">
         <div class="card login-card shadow-lg" style="max-width: 400px; width: 100%;">
             <div class="card-header bg-primary text-white text-center py-4">
-                <h2 class="mb-0 mt-2">Student Portal</h2>
+                <h2 class="mb-0 mt-2">RogieMart Hardware</h2>
                 <p class="mb-0 small">Login to your dashboard</p>
             </div>
 
@@ -59,10 +59,6 @@
                     <small class="text-muted">
                         <a href="{{ route('password.request') }}">Forgot your password?</a>
                     </small>
-                </div>
-
-                <div class="text-center mt-3">
-                    <small class="text-muted">Demo: admin@example.com / password123</small>
                 </div>
 
             </div>

@@ -142,7 +142,7 @@ class ProductController extends Controller
     {
         return [
             'name.required'          => 'Please provide the product name.',
-            'sku.required'           => 'Please provide a SKU (e.g., STN-NB-2001).',
+            'sku.required'           => 'Please provide a SKU (e.g., LMB-COC-1001).',
             'sku.unique'             => 'That SKU is already used by another product.',
             'category_id.required'   => 'Please select a category for this product.',
             'category_id.exists'     => 'The selected category no longer exists.',

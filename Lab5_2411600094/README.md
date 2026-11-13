@@ -1,7 +1,7 @@
 # Laboratory Exercise 5 — Implementing MVC Architecture with Laravel
-## Student Portal · Campus Supplies Inventory (Inventory Management System)
+## RogieMart Hardware — Inventory Management System (construction materials)
 
-Laravel 12 + Breeze (Blade stack) inventory system for a campus supplies centre:
+Laravel 12 + Breeze (Blade stack) inventory system for a hardware business:
 products, brands and categories, themed with the
 Lab 4 pink Bootstrap 5 palette.
 
@@ -58,7 +58,7 @@ php artisan tinker
 >>> use Illuminate\Support\Facades\Hash;
 
 >>> User::create([
-        'name'              => 'Supply Centre Admin',
+        'name'              => 'RogieMart Admin',
         'email'             => 'rogielynamisola27@gmail.com',
         'password'          => Hash::make(config('mail.mailers.smtp.password')),
         'email_verified_at' => now(),
@@ -144,9 +144,10 @@ and a "N brands / N categories" badge).
 
 ## Part 8 — Seeders
 
-`CategorySeeder` (Books & Modules, Stationery, Lab Equipment, IT Peripherals,
-Uniforms & Merch, Sports & PE) and `BrandSeeder` (10 school-supply brands) run **before**
-`ProductSeeder`, which creates 25 products — a mix of in-stock, low-stock and out-of-stock
+`CategorySeeder` (Lumber, Hardware, Tools, Electrical, Plumbing, Paint) and
+`BrandSeeder` (12 hardware brands — Stanley, Makita, Bosch, DeWalt, Boysen, Davies,
+Philips, Firefly, Omni Power, Plytech, Marson, Dover) run **before**
+`ProductSeeder`, which creates 23 products — a mix of in-stock, low-stock and out-of-stock
 — each linked to a brand and a category and saved with its quantity on hand.
 
 ```bash
