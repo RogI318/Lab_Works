@@ -14,7 +14,7 @@
                 <i class="bi bi-pencil me-1"></i> Edit
             </a>
             <form action="{{ route('products.destroy', $product) }}" method="POST"
-                  onsubmit="return confirm('Delete {{ $product->name }}? Its stock movements will also be removed.');">
+                  onsubmit="return confirm('Delete {{ $product->name }}?');">
                 @csrf
                 @method('DELETE')
                 <button class="btn btn-danger"><i class="bi bi-trash me-1"></i> Delete</button>
@@ -92,59 +92,6 @@
                 </div>
             @endif
 
-            <div class="card shadow-hover">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0">Stock summary</h6>
-                </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Total movements recorded</span><span class="fw-bold">{{ $product->transactions()->count() }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Units received</span>
-                        <span class="fw-bold text-success">{{ number_format($product->transactions()->where('type', 'in')->sum('quantity')) }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Units sold</span>
-                        <span class="fw-bold text-danger">{{ number_format($product->transactions()->where('type', 'out')->sum('quantity')) }}</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    {{-- ===== Related transactions (Lab 5, Part 5 Step 4) ===== --}}
-    <div class="card shadow-hover">
-        <div class="card-header bg-gradient-primary text-white">
-            <h5 class="mb-0">Recent Stock Movements</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0 data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th class="text-end">Quantity</th>
-                            <th>Reference</th>
-                            <th>Handled by</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($transactions as $transaction)
-                            <tr>
-                                <td>{{ $transaction->created_at->format('M j, Y g:i A') }}</td>
-                                <td><span class="badge {{ $transaction->typeBadgeClass() }}">{{ $transaction->typeLabel() }}</span></td>
-                                <td class="text-end fw-bold">{{ $transaction->signedQuantity() > 0 ? '+' : '' }}{{ number_format($transaction->quantity) }}</td>
-                                <td><code>{{ $transaction->reference ?: 'n/a' }}</code></td>
-                                <td>{{ $transaction->user->name ?? 'System' }}</td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="5" class="text-center text-muted py-4">No stock movements recorded yet.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 

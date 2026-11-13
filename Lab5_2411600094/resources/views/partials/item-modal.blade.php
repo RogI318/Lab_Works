@@ -49,7 +49,7 @@
                         <input type="text" name="name" id="{{ $modalKey }}-name"
                                class="form-control @if($opened) @error('name') is-invalid @enderror @endif"
                                value="{{ $name }}"
-                               placeholder="e.g. {{ $module === 'brand' ? 'Stanley' : 'Plumbing' }}" required>
+                               placeholder="e.g. {{ $module === 'brand' ? 'Pilot' : 'Stationery' }}" required>
                         @if($opened)
                             @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         @endif

@@ -22,21 +22,10 @@ return new class extends Migration
             $table->string('supplier')->nullable();
             $table->timestamps();
         });
-
-        Schema::create('inventory_transactions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-            $table->enum('type', ['in', 'out']);
-            $table->unsignedInteger('quantity');
-            $table->string('reference')->nullable();
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->timestamps();
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('inventory_transactions');
         Schema::dropIfExists('products');
     }
 };

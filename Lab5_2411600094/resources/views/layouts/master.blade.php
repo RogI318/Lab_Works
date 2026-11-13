@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Inventory') | RogieMart Hardware</title>
+    <title>@yield('title', 'Inventory') | Student Portal Supply Centre</title>
 
     <!-- Bootstrap 5 (same as Lab 4) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -19,7 +19,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">
-                RogieMart Hardware <span class="fw-normal opacity-75">| Inventory</span>
+                Student Portal <span class="fw-normal opacity-75">| Supply Centre Inventory</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -71,12 +71,6 @@
                             <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}"
                                href="{{ route('categories.index') }}">
                                 Categories
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
-                               href="{{ route('reports.index') }}">
-                                Reports
                             </a>
                         </li>
                         @if (Auth::user()->is_admin)

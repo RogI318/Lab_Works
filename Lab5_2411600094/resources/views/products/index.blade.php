@@ -70,9 +70,6 @@
             <h5 class="mb-0">All Products</h5>
             <div class="d-flex gap-2 align-items-center">
                 <span class="badge bg-light text-dark">{{ $products->total() }} item{{ $products->total() !== 1 ? 's' : '' }}</span>
-                <a href="{{ route('reports.index') }}" class="btn btn-success btn-sm">
-                    <i class="bi bi-file-earmark-bar-graph me-1"></i>Reports
-                </a>
             </div>
         </div>
 
@@ -113,7 +110,7 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route('products.destroy', $product) }}" method="POST" class="d-inline"
-                                          onsubmit="return confirm('Delete {{ $product->name }}? Its stock movements will also be removed.');">
+                                          onsubmit="return confirm('Delete {{ $product->name }}?');">
                                         @csrf
                                         @method('DELETE')
                                         <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash"></i></button>

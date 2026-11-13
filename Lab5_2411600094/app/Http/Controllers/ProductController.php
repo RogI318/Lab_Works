@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Category;
-use App\Models\InventoryTransaction;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
@@ -37,20 +35,7 @@ class ProductController extends Controller
         $this->normalizeSku($request);
         $validated = $request->validate($this->rules(), $this->messages());
 
-        // The starting quantity is saved as a "Stock In" movement, so the movement
-        // history and the quantity on hand always agree (the InventoryTransaction
-        // model adds the quantity to the product by itself).
-        $openingStock = (int) $validated['quantity'];
-
-        $product = DB::transaction(function () use ($validated, $openingStock) {
-            $product = Product::create(array_merge($validated, ['quantity' => 0]));
-
-            if ($openingStock > 0) {
-                $this->recordMovement($product, InventoryTransaction::TYPE_IN, $openingStock, 'Opening stock');
-            }
-
-            return $product;
-        });
+        $product = Product::create($validated);
 
         return redirect()
             ->route('products.index')
@@ -61,13 +46,7 @@ class ProductController extends Controller
     {
         $product->load('category', 'brand');
 
-        $transactions = $product->transactions()
-                                ->with('user')
-                                ->orderByDesc('created_at')
-                                ->take(15)
-                                ->get();
-
-        return view('products.show', compact('product', 'transactions'));
+        return view('products.show', compact('product'));
     }
 
     public function edit(Product $product)
@@ -80,25 +59,7 @@ class ProductController extends Controller
         $this->normalizeSku($request);
         $validated = $request->validate($this->rules($product->id), $this->messages());
 
-        // A changed quantity is saved as a stock movement (not by overwriting the
-        // number), so the ledger shown on the product page never drifts.
-        $newQuantity = (int) $validated['quantity'];
-        unset($validated['quantity']);
-
-        DB::transaction(function () use ($product, $validated, $newQuantity) {
-            $product->update($validated);
-
-            $difference = $newQuantity - (int) $product->quantity;
-
-            if ($difference !== 0) {
-                $this->recordMovement(
-                    $product,
-                    $difference > 0 ? InventoryTransaction::TYPE_IN : InventoryTransaction::TYPE_OUT,
-                    abs($difference),
-                    'Manual adjustment (edit form)'
-                );
-            }
-        });
+        $product->update($validated);
 
         return redirect()
             ->route('products.index')
@@ -108,7 +69,7 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         $name = $product->name;
-        $product->delete();   // transactions are deleted with it (cascade)
+        $product->delete();
 
         return redirect()
             ->route('products.index')
@@ -146,18 +107,6 @@ class ProductController extends Controller
         return $query;
     }
 
-    /** One stock movement; the model updates the quantity on hand. */
-    private function recordMovement(Product $product, string $type, int $quantity, string $reference): void
-    {
-        InventoryTransaction::create([
-            'product_id' => $product->id,
-            'type'       => $type,
-            'quantity'   => $quantity,
-            'reference'  => $reference,
-            'user_id'    => auth()->id(),
-        ]);
-    }
-
     /** SKUs are stored in capitals, exactly as the form shows them. */
     private function normalizeSku(Request $request): void
     {
@@ -193,7 +142,7 @@ class ProductController extends Controller
     {
         return [
             'name.required'          => 'Please provide the product name.',
-            'sku.required'           => 'Please provide a SKU (e.g., BND-PL-0101).',
+            'sku.required'           => 'Please provide a SKU (e.g., STN-NB-2001).',
             'sku.unique'             => 'That SKU is already used by another product.',
             'category_id.required'   => 'Please select a category for this product.',
             'category_id.exists'     => 'The selected category no longer exists.',

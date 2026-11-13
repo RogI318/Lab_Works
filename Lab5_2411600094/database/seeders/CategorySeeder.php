@@ -7,16 +7,16 @@ use Illuminate\Database\Seeder;
 
 class CategorySeeder extends Seeder
 {
-    /** The six sections of RogieMart Hardware. Runs before ProductSeeder. */
+    /** The six sections of the campus supply store. Runs before ProductSeeder. */
     public function run(): void
     {
         $categories = [
-            ['Lumber',    'Coco lumber, plywood and ceiling boards for framing, formwork and roofing.'],
-            ['Hardware',  'Nails, GI sheets, bolts, hinges and other fasteners and building hardware.'],
-            ['Tools',     'Hand tools and power tools used by the carpentry and installation crews.'],
-            ['Electrical','Wires, extension cords, lamps and electrical supplies for site wiring.'],
-            ['Plumbing',  'PVC pipes and fittings, valves and plumbing materials for water lines.'],
-            ['Paint',     'Latex and enamel paint, primers and painting accessories for finishing work.'],
+            ['Books & Modules',     'Textbooks, workbooks, department modules and board-exam reviewers.'],
+            ['Stationery',          'Notebooks, pad paper, ballpens, markers, pencils and classroom consumables.'],
+            ['Lab Equipment',       'Gloves, wipes, masks and the consumables issued to science laboratory sections.'],
+            ['IT Peripherals',      'Calculators, flash drives, mouse devices, keyboards and printer supplies.'],
+            ['Uniforms & Merch',    'Lab gowns, PE uniforms, ID lanyards and school merchandise.'],
+            ['Sports & PE',         'Balls and equipment issued for physical education classes and intramurals.'],
         ];
 
         foreach ($categories as [$name, $description]) {

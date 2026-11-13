@@ -1,9 +1,9 @@
 # Laboratory Exercise 5 — Implementing MVC Architecture with Laravel
-## RogieMart Hardware — Inventory Management System (construction materials)
+## Student Portal · Campus Supplies Inventory (Inventory Management System)
 
-Laravel 12 + Breeze (Blade stack) inventory system for a hardware store selling
-construction materials: products, brands, categories and an `inventory_transactions`
-ledger, themed with the Lab 4 pink Bootstrap 5 palette.
+Laravel 12 + Breeze (Blade stack) inventory system for a campus supplies centre:
+products, brands and categories, themed with the
+Lab 4 pink Bootstrap 5 palette.
 
 ---
 
@@ -14,7 +14,7 @@ ledger, themed with the Lab 4 pink Bootstrap 5 palette.
 | Framework | Laravel 12 (PHP 8.2.12) |
 | Auth | Laravel Breeze, Blade stack |
 | Database | MySQL `lab5_db` (XAMPP, user `root`, no password) |
-| Front-end | Bootstrap 5.3 + Bootstrap Icons + Chart.js (CDN), `public/css/custom.css` |
+| Front-end | Bootstrap 5.3 + Bootstrap Icons (CDN), `public/css/custom.css` |
 
 ```bash
 composer install
@@ -58,9 +58,9 @@ php artisan tinker
 >>> use Illuminate\Support\Facades\Hash;
 
 >>> User::create([
-        'name'              => 'RogieMart Admin',
-        'email'             => 'admin@example.com',
-        'password'          => Hash::make('password123'),
+        'name'              => 'Supply Centre Admin',
+        'email'             => 'rogielynamisola27@gmail.com',
+        'password'          => Hash::make(config('mail.mailers.smtp.password')),
         'email_verified_at' => now(),
     ]);
 
@@ -68,9 +68,9 @@ php artisan tinker
 >>> exit
 ```
 
-Login with **admin@example.com / password123** (or the seeded account
-`reyzlyn588@gmail.com / password123`, created as "RogieMart Admin" by `DatabaseSeeder`).
-The `User` model casts `password` to
+Login with **rogielynamisola27@gmail.com** and the Gmail app password held in `.env`
+(`MAIL_PASSWORD`) — `DatabaseSeeder` reads the same value, so the seeder and this
+hand-made account produce the same credentials. The `User` model casts `password` to
 `hashed`, so `DatabaseSeeder` can pass the plain string and the same hash is produced.
 
 ## Part 3 — Models, migrations & relationships
@@ -79,7 +79,6 @@ The `User` model casts `password` to
 php artisan make:model Product -mcr
 php artisan make:model Brand -mc
 php artisan make:model Category -mc
-php artisan make:model InventoryTransaction -m
 ```
 
 | Table | Columns |
@@ -87,21 +86,16 @@ php artisan make:model InventoryTransaction -m
 | `brands` | `id`, `name` (unique), `description`, timestamps |
 | `categories` | `id`, `name` (unique), `description`, timestamps |
 | `products` | `id`, `name`, `sku` (unique), `description`, `brand_id` FK, `category_id` FK, `quantity` (default 0), `reorder_level`, `unit_price`, `supplier`, timestamps |
-| `inventory_transactions` | `id`, `product_id` FK, `type` (`in` / `out`), `quantity`, `reference`, `user_id` FK, timestamps |
 
-`Product` → `belongsTo(Brand)`, `belongsTo(Category)`, `hasMany(InventoryTransaction)`,
+`Product` → `belongsTo(Brand)`, `belongsTo(Category)`,
 plus `isLowStock()` / `isOutOfStock()` and the `lowStock` / `outOfStock` query scopes.
 `Brand` and `Category` → `hasMany(Product)`.
-
-`InventoryTransaction::booted()` syncs `products.quantity` on `created` / `deleting`, so
-the ledger is the source of truth for stock on hand.
 
 ## Part 4 — Controllers, validation & custom messages
 
 ```bash
 php artisan make:controller ProductController --resource --model=Product
 php artisan make:controller DashboardController
-php artisan make:controller ReportController
 ```
 
 `ProductController` validates `name` (required, string, max), `sku` (required, unique —
@@ -119,7 +113,7 @@ destroy driven by Bootstrap modals.
 - `products/_form.blade.php` — **one partial shared by create and edit**, with CSRF,
   validation errors and the brand / category dropdowns (each with a "+" button that opens
   the brand/category modal so a new one can be added without leaving the form).
-- `products/show.blade.php` — product details plus its related transactions.
+- `products/show.blade.php` — product details with its stock status.
 - `partials/item-modal.blade.php` and `partials/item-delete-modal.blade.php` — the add /
   edit modal (a hidden `modal_key` input reopens the modal when validation fails) and the
   delete confirmation, reused by both brands and categories.
@@ -138,26 +132,22 @@ Route::middleware('auth')->group(function () {
     Route::resource('products', ProductController::class);
     Route::resource('brands', BrandController::class)->except(['create', 'edit', 'show']);
     Route::resource('categories', CategoryController::class)->except(['create', 'edit', 'show']);
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 });
 ```
 
 ## Part 7 — Dashboard with real data
 
-`DashboardController` supplies Total Products, Low Stock, Out of Stock and Inventory
-Value (`SUM(quantity * unit_price)`) cards, Recent Products, the Low Stock Alerts list,
-stock-movement totals, the brand and category tables (with per-row product-count badges
-and a "N brands / N categories" badge), and Chart.js charts.
+`DashboardController` supplies the Total Products, Low Stock, Out of Stock and Inventory
+Value (`SUM(quantity * unit_price)`) cards, the Low Stock Alerts list, Recent Products,
+and the brand and category tables (with per-row product-count badges
+and a "N brands / N categories" badge).
 
 ## Part 8 — Seeders
 
-`CategorySeeder` (Lumber, Hardware, Tools, Electrical, Plumbing, Paint) and `BrandSeeder`
-(12 hardware brands: Stanley, Makita, Bosch, DeWalt, Boysen, Davies, Philips, Firefly,
-Omni Power, Plytech, Marson, Dover) run **before**
-`ProductSeeder`, which creates 23 hardware products — a mix of in-stock, low-stock and
-out-of-stock — each linked to a brand and a category, and posts the matching `in` / `out`
-transactions (purchase orders and sales orders).
+`CategorySeeder` (Books & Modules, Stationery, Lab Equipment, IT Peripherals,
+Uniforms & Merch, Sports & PE) and `BrandSeeder` (10 school-supply brands) run **before**
+`ProductSeeder`, which creates 25 products — a mix of in-stock, low-stock and out-of-stock
+— each linked to a brand and a category and saved with its quantity on hand.
 
 ```bash
 php artisan migrate:fresh --seed
@@ -166,7 +156,8 @@ php artisan migrate:fresh --seed
 ## Part 9 — Theme & navigation
 
 `public/css/custom.css` keeps the Lab 4 pink palette (`#FB6F92`, `#FF8FAB`, `#FFB3C6`,
-`#FFE5EC`). Sidebar: **Dashboard / Products / Brands / Categories / Reports / Logout**.
+`#FFE5EC`). Sidebar: **Dashboard / Products / Brands / Categories / Logout** (plus
+**Manage Users** for administrators).
 
 ```bash
 php artisan serve
@@ -174,15 +165,14 @@ php artisan serve
 
 ## Part 10 — Testing checklist
 
-- Login as `admin@example.com` / `password123`; guests are bounced from every route.
+- Login as `rogielynamisola27@gmail.com` with the `.env` `MAIL_PASSWORD`; guests are bounced from every route.
 - Product CRUD: create with an invalid SKU duplicate, missing brand, negative price →
   custom errors shown; blank SKU / unknown brand rejected server-side.
 - Brand & Category: add via modal, duplicate name reopens the modal with the error and
   keeps the typed value, edit works in place, deleting a brand that still has products is
   blocked with a friendly message, and the "+" button on the product form returns to the
   form with the new option already selected and the half-typed draft restored.
-- Dashboard: cards, low-stock list and charts match the seeded data.
-- Report page and CSV export.
+- Dashboard: the four cards and the low-stock list match the seeded data.
 
 ## Part 11 — Publish to GitHub
 

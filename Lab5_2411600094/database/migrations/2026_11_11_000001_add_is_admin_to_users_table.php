@@ -18,7 +18,7 @@ return new class extends Migration
 
         // Make sure nobody is locked out after migrating: the demo admin becomes an
         // admin, and if no admin exists at all, the oldest user becomes one instead.
-        DB::table('users')->where('email', 'admin@example.com')->update(['is_admin' => true]);
+        DB::table('users')->where('email', 'rogielynamisola27@gmail.com')->update(['is_admin' => true]);
 
         if (! DB::table('users')->where('is_admin', true)->exists()) {
             $first = DB::table('users')->orderBy('id')->first();

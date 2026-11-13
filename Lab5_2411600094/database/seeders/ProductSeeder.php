@@ -4,171 +4,150 @@ namespace Database\Seeders;
 
 use App\Models\Brand;
 use App\Models\Category;
-use App\Models\InventoryTransaction;
 use App\Models\Product;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
 {
     /**
-     * Opening stock for the RogieMart Hardware Inventory.
-     * "on_hand" is the figure each item must end at; "issued" are units already
-     * sold or drawn for jobs, so the receiving quantity is on_hand + issued. The mix
-     * below gives healthy, low-stock and out-of-stock items for the dashboard to report.
+     * Opening stock for the Campus Supplies Inventory.
+     * Each product stores its quantity on hand directly; the mix below gives
+     * healthy, low-stock and out-of-stock items for the dashboard alerts.
      */
     public function run(): void
     {
         $categories = Category::pluck('id', 'name');
         $brands     = Brand::pluck('id', 'name');
-        $userId     = User::value('id');
 
-        $stanley  = 'Stanley';
-        $plytech  = 'Plytech';
-        $marson   = 'Marson';
-        $dover    = 'Dover';
-        $firefly  = 'Firefly';
+        $nres     = 'New Research Educational Supplies';
+        $kcc      = 'Kimberly-Clark Professional';
 
         $products = [
-            // ---------- Lumber ----------
-            ['name' => 'Coco Lumber 2x2x10', 'sku' => 'LMB-COC-1001',
-             'category' => 'Lumber', 'brand' => $plytech, 'supplier' => 'Metro Lumber Supply',
-             'price' => 185.00, 'reorder' => 30, 'on_hand' => 84, 'issued' => 26,
-             'description' => 'Saw hardwood for roof battens, framing and formwork.'],
-            ['name' => 'Marine Plywood 1/2" x 2x4', 'sku' => 'LMB-PLY-1002',
-             'category' => 'Lumber', 'brand' => $plytech, 'supplier' => 'Metro Lumber Supply',
-             'price' => 620.00, 'reorder' => 15, 'on_hand' => 40, 'issued' => 12,
-             'description' => 'Water-resistant plywood for concrete formwork and cabinetry.'],
-            ['name' => 'Ceiling Board 1/4" x 4x8', 'sku' => 'LMB-CEI-1003',
-             'category' => 'Lumber', 'brand' => $plytech, 'supplier' => 'Northside Lumber Yard',
-             'price' => 395.00, 'reorder' => 20, 'on_hand' => 8, 'issued' => 14,
-             'description' => 'Interior ceiling panel; running low, reorder before the next finishing job.'],
+            // ---------- Books & Modules ----------
+            ['name' => 'General Biology Module (Senior High)', 'sku' => 'BKM-BIO-1001',
+             'category' => 'Books & Modules', 'brand' => $nres, 'supplier' => 'NRES Distribution Center',
+             'price' => 385.00, 'reorder' => 15, 'quantity' => 42,
+             'description' => 'Curriculum module issued to all Grade 11 STEM sections.'],
+            ['name' => 'College Physics Workbook', 'sku' => 'BKM-PHY-1002',
+             'category' => 'Books & Modules', 'brand' => $nres, 'supplier' => 'NRES Distribution Center',
+             'price' => 460.00, 'reorder' => 12, 'quantity' => 9,
+             'description' => 'Workbook for the physics laboratory course; low stock flagged.'],
+            ['name' => 'Mathematics Reviewer (Grade 12)', 'sku' => 'BKM-MTH-1003',
+             'category' => 'Books & Modules', 'brand' => $nres, 'supplier' => 'NRES Distribution Center',
+             'price' => 245.00, 'reorder' => 20, 'quantity' => 0,
+             'description' => 'Board-exam reviewer; completely released to the reviewing sections.'],
 
-            // ---------- Hardware ----------
-            ['name' => 'Common Wire Nails 3" (1 kg)', 'sku' => 'HDW-NL-2001',
-             'category' => 'Hardware', 'brand' => $stanley, 'supplier' => 'Hardware Depot Trading',
-             'price' => 145.00, 'reorder' => 40, 'on_hand' => 160, 'issued' => 55,
-             'description' => 'Bright nails for general carpentry, priced per kilo.'],
-            ['name' => 'GI Corrugated Roof Sheet 0.35mm x 3ft', 'sku' => 'HDW-GI-2002',
-             'category' => 'Hardware', 'brand' => $plytech, 'supplier' => 'Metro Lumber Supply',
-             'price' => 480.00, 'reorder' => 20, 'on_hand' => 65, 'issued' => 18,
-             'description' => 'Galvanized corrugated sheet for roofing and site fencing.'],
-            ['name' => 'Expansion Bolt 3/8" x 4" (box of 50)', 'sku' => 'HDW-BT-2003',
-             'category' => 'Hardware', 'brand' => 'Bosch', 'supplier' => 'Fastener World Trading',
-             'price' => 890.00, 'reorder' => 10, 'on_hand' => 4, 'issued' => 8,
-             'description' => 'Wedge anchors for mounting brackets on concrete; below reorder level.'],
-            ['name' => 'Butt Hinge 4" (pair)', 'sku' => 'HDW-HG-2004',
-             'category' => 'Hardware', 'brand' => $stanley, 'supplier' => 'Hardware Depot Trading',
-             'price' => 95.00, 'reorder' => 25, 'on_hand' => 72, 'issued' => 20,
-             'description' => 'Door hinges for site carpentry and door installation.'],
+            // ---------- Stationery ----------
+            ['name' => 'Spiral Notebook 100 pages A5', 'sku' => 'STN-NB-2001',
+             'category' => 'Stationery', 'brand' => $nres, 'supplier' => 'Ritex Paper Corporation',
+             'price' => 89.00, 'reorder' => 40, 'quantity' => 120,
+             'description' => 'Double-line spiral notebook distributed during enrolment.'],
+            ['name' => 'Long Pad Paper 8.5x13 (50 sheets)', 'sku' => 'STN-PD-2002',
+             'category' => 'Stationery', 'brand' => $nres, 'supplier' => 'Ritex Paper Corporation',
+             'price' => 65.50, 'reorder' => 50, 'quantity' => 38,
+             'description' => 'Used for examinations and take-home quizzes.'],
+            ['name' => 'Training Ballpen (box of 12)', 'sku' => 'STN-BP-2003',
+             'category' => 'Stationery', 'brand' => 'Pilot', 'supplier' => 'Station Hub Trading',
+             'price' => 168.00, 'reorder' => 30, 'quantity' => 96,
+             'description' => 'Blue ballpens released per section, boxed.'],
+            ['name' => 'Whiteboard Marker Fine (assorted)', 'sku' => 'STN-WM-2004',
+             'category' => 'Stationery', 'brand' => 'Pilot', 'supplier' => 'Station Hub Trading',
+             'price' => 45.00, 'reorder' => 24, 'quantity' => 18,
+             'description' => 'Classroom markers, fast-moving during examination weeks.'],
+            ['name' => 'Mechanical Pencil 0.5mm', 'sku' => 'STN-MP-2005',
+             'category' => 'Stationery', 'brand' => 'Tombow', 'supplier' => 'Station Hub Trading',
+             'price' => 95.00, 'reorder' => 20, 'quantity' => 54,
+             'description' => 'Approved for engineering drawing subjects.'],
+            ['name' => 'Correction Tape 5mm', 'sku' => 'STN-CT-2006',
+             'category' => 'Stationery', 'brand' => 'Tombow', 'supplier' => 'Station Hub Trading',
+             'price' => 78.00, 'reorder' => 15, 'quantity' => 7,
+             'description' => 'Single refill tape dispenser.'],
+            ['name' => 'Colored Pencil Set 12 colors', 'sku' => 'STN-CP-2007',
+             'category' => 'Stationery', 'brand' => 'Faber-Castell', 'supplier' => 'ArtsMart Trading',
+             'price' => 210.00, 'reorder' => 12, 'quantity' => 28,
+             'description' => 'Bought per section for the fine-arts module.'],
+            ['name' => 'Bond Paper 8.5x14 Ivory (ream)', 'sku' => 'STN-BD-2008',
+             'category' => 'Stationery', 'brand' => 'HP', 'supplier' => 'Office World Supply',
+             'price' => 255.00, 'reorder' => 12, 'quantity' => 6,
+             'description' => 'Ream of 500 sheets for thesis and board papers.'],
 
-            // ---------- Tools ----------
-            ['name' => 'Claw Hammer 20oz', 'sku' => 'TLS-HM-3001',
-             'category' => 'Tools', 'brand' => $stanley, 'supplier' => 'Hardware Depot Trading',
-             'price' => 520.00, 'reorder' => 10, 'on_hand' => 26, 'issued' => 9,
-             'description' => 'Forged steel head with grip handle; the crew favourite.'],
-            ['name' => 'Cordless Drill 12V Kit', 'sku' => 'TLS-DR-3002',
-             'category' => 'Tools', 'brand' => 'Makita', 'supplier' => 'Toolmart Equipment Corp.',
-             'price' => 4250.00, 'reorder' => 5, 'on_hand' => 9, 'issued' => 4,
-             'description' => 'Battery drill-driver kit for installation and framing crews.'],
-            ['name' => 'Angle Grinder 4"', 'sku' => 'TLS-AG-3003',
-             'category' => 'Tools', 'brand' => 'DeWalt', 'supplier' => 'Toolmart Equipment Corp.',
-             'price' => 2680.00, 'reorder' => 6, 'on_hand' => 0, 'issued' => 7,
-             'description' => 'Metal cutting and rebar grinding; sold out, reorder from supplier.'],
-            ['name' => 'Steel Tape Measure 5m', 'sku' => 'TLS-TM-3004',
-             'category' => 'Tools', 'brand' => $stanley, 'supplier' => 'Hardware Depot Trading',
-             'price' => 285.00, 'reorder' => 12, 'on_hand' => 34, 'issued' => 11,
-             'description' => 'Locking tape for measuring cuts and take-offs.'],
-            ['name' => 'Circular Saw Blade 7-1/4" (40T)', 'sku' => 'TLS-BL-3005',
-             'category' => 'Tools', 'brand' => 'Bosch', 'supplier' => 'Toolmart Equipment Corp.',
-             'price' => 745.00, 'reorder' => 8, 'on_hand' => 6, 'issued' => 5,
-             'description' => 'Carbide-tipped framing blade; only six packs left on the shelf.'],
+            // ---------- Lab Equipment ----------
+            ['name' => 'Nitrile Examination Gloves (box of 100)', 'sku' => 'LAB-GL-3001',
+             'category' => 'Lab Equipment', 'brand' => $kcc, 'supplier' => 'Medilab Supplies Inc.',
+             'price' => 620.00, 'reorder' => 10, 'quantity' => 3,
+             'description' => 'Powder-free gloves for the anatomy and microbiology labs.'],
+            ['name' => 'Laboratory Lens Wipes (pack of 250)', 'sku' => 'LAB-WP-3002',
+             'category' => 'Lab Equipment', 'brand' => $kcc, 'supplier' => 'Medilab Supplies Inc.',
+             'price' => 285.00, 'reorder' => 12, 'quantity' => 34,
+             'description' => 'Cleaning wipes for microscope lenses and glassware.'],
+            ['name' => 'Face Mask 3-Ply (box of 50)', 'sku' => 'LAB-FM-3003',
+             'category' => 'Lab Equipment', 'brand' => $kcc, 'supplier' => 'Medilab Supplies Inc.',
+             'price' => 165.00, 'reorder' => 15, 'quantity' => 0,
+             'description' => 'Required for every laboratory session; currently depleted.'],
 
-            // ---------- Electrical ----------
-            ['name' => 'THHN Wire 2.0 sq.mm (250m roll)', 'sku' => 'ELC-WR-4001',
-             'category' => 'Electrical', 'brand' => 'Omni Power', 'supplier' => 'PhilWood Electrical Supply',
-             'price' => 3150.00, 'reorder' => 4, 'on_hand' => 12, 'issued' => 5,
-             'description' => 'Copper building wire for rough-in wiring, sold by the roll.'],
-            ['name' => 'Extension Cord 5-Outlet 5m', 'sku' => 'ELC-EC-4002',
-             'category' => 'Electrical', 'brand' => $firefly, 'supplier' => 'PhilWood Electrical Supply',
-             'price' => 465.00, 'reorder' => 10, 'on_hand' => 3, 'issued' => 9,
-             'description' => 'Heavy-duty cord for job-site power; low stock flagged.'],
-            ['name' => 'LED Bulb 12W (pack of 6)', 'sku' => 'ELC-LED-4003',
-             'category' => 'Electrical', 'brand' => 'Philips', 'supplier' => 'PhilWood Electrical Supply',
-             'price' => 185.00, 'reorder' => 24, 'on_hand' => 90, 'issued' => 30,
-             'description' => 'Energy-saving bulbs for showrooms and site temporary lighting.'],
-            ['name' => 'Electrical Tape (pack of 10)', 'sku' => 'ELC-TA-4004',
-             'category' => 'Electrical', 'brand' => $firefly, 'supplier' => 'PhilWood Electrical Supply',
-             'price' => 75.00, 'reorder' => 20, 'on_hand' => 48, 'issued' => 22,
-             'description' => 'PVC insulating tape for wire joints.'],
+            // ---------- IT Peripherals ----------
+            ['name' => 'Scientific Calculator FX-991EX', 'sku' => 'ITP-CL-4001',
+             'category' => 'IT Peripherals', 'brand' => 'Casio', 'supplier' => 'Edvantage Technology',
+             'price' => 2150.00, 'reorder' => 6, 'quantity' => 11,
+             'description' => 'Rental units for students without their own calculator.'],
+            ['name' => 'USB Flash Drive 32GB', 'sku' => 'ITP-USB-4002',
+             'category' => 'IT Peripherals', 'brand' => 'HP', 'supplier' => 'Edvantage Technology',
+             'price' => 349.00, 'reorder' => 15, 'quantity' => 62,
+             'description' => 'Distribution media for thesis files and reviewers.'],
+            ['name' => 'Optical Wireless Mouse', 'sku' => 'ITP-MS-4003',
+             'category' => 'IT Peripherals', 'brand' => 'Logitech', 'supplier' => 'Edvantage Technology',
+             'price' => 549.00, 'reorder' => 10, 'quantity' => 5,
+             'description' => 'Replacements for the computer laboratory.'],
+            ['name' => 'Wireless Keyboard (full size)', 'sku' => 'ITP-KB-4004',
+             'category' => 'IT Peripherals', 'brand' => 'Logitech', 'supplier' => 'Edvantage Technology',
+             'price' => 890.00, 'reorder' => 8, 'quantity' => 0,
+             'description' => 'Issued to the typewriting and computer literacy classes.'],
+            ['name' => 'LaserJet Toner Cartridge 105A', 'sku' => 'ITP-TN-4005',
+             'category' => 'IT Peripherals', 'brand' => 'HP', 'supplier' => 'Office World Supply',
+             'price' => 2980.00, 'reorder' => 4, 'quantity' => 9,
+             'description' => 'Keeps the registrar and department printers running.'],
 
-            // ---------- Plumbing ----------
-            ['name' => 'PVC Pipe 1/2" x 3m', 'sku' => 'PLB-PVC-5001',
-             'category' => 'Plumbing', 'brand' => $marson, 'supplier' => 'AquaLine Plumbing Depot',
-             'price' => 145.00, 'reorder' => 50, 'on_hand' => 210, 'issued' => 65,
-             'description' => 'Pressure pipe for residential water lines.'],
-            ['name' => 'PVC Elbow 1/2"', 'sku' => 'PLB-EL-5002',
-             'category' => 'Plumbing', 'brand' => $marson, 'supplier' => 'AquaLine Plumbing Depot',
-             'price' => 18.00, 'reorder' => 60, 'on_hand' => 180, 'issued' => 40,
-             'description' => 'Schedule 40 fitting for water line corners.'],
-            ['name' => 'Gate Valve 1"', 'sku' => 'PLB-VL-5003',
-             'category' => 'Plumbing', 'brand' => $dover, 'supplier' => 'AquaLine Plumbing Depot',
-             'price' => 385.00, 'reorder' => 12, 'on_hand' => 0, 'issued' => 16,
-             'description' => 'Brass main-line valve; fully sold, purchase order pending.'],
-            ['name' => 'Flexible Hose 16"', 'sku' => 'PLB-HT-5004',
-             'category' => 'Plumbing', 'brand' => $dover, 'supplier' => 'AquaLine Plumbing Depot',
-             'price' => 165.00, 'reorder' => 15, 'on_hand' => 22, 'issued' => 8,
-             'description' => 'Stainless connector hose for sink and shower installs.'],
+            // ---------- Uniforms & Merch ----------
+            ['name' => 'Laboratory Gown (student size)', 'sku' => 'UNI-GW-5001',
+             'category' => 'Uniforms & Merch', 'brand' => 'Catseye Sportswear', 'supplier' => 'Texline Uniform Services',
+             'price' => 395.00, 'reorder' => 20, 'quantity' => 46,
+             'description' => 'White gown required for all laboratory subjects.'],
+            ['name' => 'PE Uniform Shirt (Junior)', 'sku' => 'UNI-PE-5002',
+             'category' => 'Uniforms & Merch', 'brand' => 'Catseye Sportswear', 'supplier' => 'Texline Uniform Services',
+             'price' => 320.00, 'reorder' => 25, 'quantity' => 12,
+             'description' => 'Reorder required before the intramurals week.'],
+            ['name' => 'Student ID Lanyard (school logo)', 'sku' => 'UNI-LN-5003',
+             'category' => 'Uniforms & Merch', 'brand' => 'Catseye Sportswear', 'supplier' => 'IdCard PH',
+             'price' => 95.00, 'reorder' => 30, 'quantity' => 88,
+             'description' => 'Woven lanyard issued with the official student ID.'],
 
-            // ---------- Paint ----------
-            ['name' => 'Boysen Latex Paint 4L (White)', 'sku' => 'PNT-LTX-6001',
-             'category' => 'Paint', 'brand' => 'Boysen', 'supplier' => 'Colorhouse Paint Supply',
-             'price' => 1150.00, 'reorder' => 10, 'on_hand' => 28, 'issued' => 12,
-             'description' => 'Interior latex for ceiling and wall finishing, anti-fungal.'],
-            ['name' => 'Davies Quick Drip Enamel 1L', 'sku' => 'PNT-EN-6002',
-             'category' => 'Paint', 'brand' => 'Davies', 'supplier' => 'Colorhouse Paint Supply',
-             'price' => 495.00, 'reorder' => 12, 'on_hand' => 7, 'issued' => 15,
-             'description' => 'Gloss enamel for doors, gates and metal surfaces; low stock.'],
-            ['name' => 'Paint Brush 3"', 'sku' => 'PNT-BR-6003',
-             'category' => 'Paint', 'brand' => 'Davies', 'supplier' => 'Colorhouse Paint Supply',
-             'price' => 135.00, 'reorder' => 20, 'on_hand' => 55, 'issued' => 25,
-             'description' => 'Flat bristle brush for latex walls and trim.'],
+            // ---------- Sports & PE ----------
+            ['name' => 'Basketball Size 7 (game)', 'sku' => 'SPT-BB-6001',
+             'category' => 'Sports & PE', 'brand' => 'Molten', 'supplier' => 'Sportsphere.ph',
+             'price' => 1850.00, 'reorder' => 6, 'quantity' => 14,
+             'description' => 'Official game ball for intramurals and PE classes.'],
+            ['name' => 'Volleyball Size 5 (training)', 'sku' => 'SPT-VB-6002',
+             'category' => 'Sports & PE', 'brand' => 'Molten', 'supplier' => 'Sportsphere.ph',
+             'price' => 1250.00, 'reorder' => 8, 'quantity' => 2,
+             'description' => 'Training ball; two units left after the volleyball clinic.'],
+            ['name' => 'Sepak Takraw Ball (rattan)', 'sku' => 'SPT-ST-6003',
+             'category' => 'Sports & PE', 'brand' => 'Molten', 'supplier' => 'Sportsphere.ph',
+             'price' => 780.00, 'reorder' => 10, 'quantity' => 0,
+             'description' => 'Fully issued to the takraw team before the district meet.'],
         ];
 
-        foreach ($products as $index => $item) {
-            $product = Product::create([
+        foreach ($products as $item) {
+            Product::create([
                 'name'          => $item['name'],
                 'sku'           => $item['sku'],
                 'description'   => $item['description'],
                 'brand_id'      => $brands[$item['brand']],
                 'category_id'   => $categories[$item['category']],
-                'quantity'      => 0,
+                'quantity'      => $item['quantity'],
                 'reorder_level' => $item['reorder'],
                 'unit_price'    => $item['price'],
                 'supplier'      => $item['supplier'],
             ]);
-
-            // Receiving document for the opening stock.
-            $this->move($product, InventoryTransaction::TYPE_IN,
-                $item['on_hand'] + $item['issued'], 'PO-2026-' . str_pad((string) ($index + 1), 4, '0', STR_PAD_LEFT), $userId);
-
-            if ($item['issued'] > 0) {
-                $this->move($product, InventoryTransaction::TYPE_OUT,
-                    $item['issued'], 'SO-' . str_pad((string) ($index + 7), 4, '0', STR_PAD_LEFT), $userId);
-            }
         }
-    }
-
-    /** Record one movement; the model updates the quantity on hand. */
-    private function move(Product $product, string $type, int $quantity, string $reference, ?int $userId): void
-    {
-        InventoryTransaction::forceCreate([
-            'product_id' => $product->id,
-            'type'       => $type,
-            'quantity'   => $quantity,
-            'reference'  => $reference,
-            'user_id'    => $userId,
-            'created_at' => now()->subDays($type === InventoryTransaction::TYPE_IN ? random_int(3, 6) : random_int(0, 2)),
-        ]);
     }
 }

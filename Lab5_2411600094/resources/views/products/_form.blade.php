@@ -20,7 +20,7 @@
         <input type="text" name="name" id="name"
                class="form-control @if($productErrors) @error('name') is-invalid @enderror @endif"
                value="{{ old('name') !== null && $productErrors ? old('name') : ($product->name ?? '') }}"
-               placeholder="e.g. Coco Lumber 2x2x10">
+               placeholder="e.g. Spiral Notebook 100 pages">
         @if($productErrors)@error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
     </div>
 
@@ -29,7 +29,7 @@
         <input type="text" name="sku" id="sku"
                class="form-control text-uppercase @if($productErrors) @error('sku') is-invalid @enderror @endif"
                value="{{ old('sku') !== null && $productErrors ? old('sku') : ($product->sku ?? '') }}"
-               placeholder="e.g. LMB-COC-1001">
+               placeholder="e.g. STN-NB-1001">
         @if($productErrors)@error('sku')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
     </div>
 
@@ -38,7 +38,7 @@
         <input type="text" name="supplier" id="supplier"
                class="form-control @if($productErrors) @error('supplier') is-invalid @enderror @endif"
                value="{{ old('supplier') !== null && $productErrors ? old('supplier') : ($product->supplier ?? '') }}"
-               placeholder="e.g. Metro Lumber Supply">
+               placeholder="e.g. National Book Store Supply">
         @if($productErrors)@error('supplier')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
     </div>
 
@@ -92,9 +92,6 @@
                class="form-control @if($productErrors) @error('quantity') is-invalid @enderror @endif"
                value="{{ old('quantity') !== null && $productErrors ? old('quantity') : ($product->quantity ?? 0) }}">
         @if($productErrors)@error('quantity')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
-        <small class="text-muted">
-            {{ isset($product) ? 'Changing this records a stock adjustment.' : 'Saved as the opening stock.' }}
-        </small>
     </div>
 
     <div class="col-md-4">
