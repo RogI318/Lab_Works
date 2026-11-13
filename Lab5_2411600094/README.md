@@ -5,16 +5,36 @@ Laravel 12 + Breeze (Blade stack) inventory system for a hardware business:
 products, brands and categories, themed with the
 Lab 4 pink Bootstrap 5 palette.
 
----
+## What My the system has
+
+- **Sign in** — Breeze Blade auth (login + password reset, no public registration); every
+  inventory page sits behind `auth`.
+- **Dashboard** — four stat cards (Total Products, Low Stock, Out of Stock, Inventory Value)
+  above Low Stock Alerts, Recent Products, Brands and Categories.
+- **Products** — full CRUD for name, SKU, category, brand, quantity, reorder level, unit price
+  and supplier, with search (name / SKU / supplier), category + brand + stock-status filters
+  and 10 rows per page. SKUs are stored in capitals.
+- **Stock status** — Healthy / Low Stock / Out of Stock computed from `quantity` against
+  `reorder_level`, shown as badges everywhere.
+- **Brands & Categories** — CRUD from modals; each row shows its product count and units on hand.
+- **Users** — administrators only (`admin` middleware): create users, grant or revoke admin,
+  delete accounts. An admin cannot demote or delete themselves.
+- **Look** — My Lab 4 pink palette  in `public/css/custom.css`.
+
 
 ## Part 1 — Environment setup
 
-| Item | Value |
+| Item | On my system |
 | --- | --- |
-| Framework | Laravel 12 (PHP 8.2.12) |
+| OS | Windows 11 (build 26200) with XAMPP |
+| PHP | 8.2.12 (`pdo_mysql`, `mbstring`, `curl`, `fileinfo`, `openssl`) |
+| Framework | Laravel 12.69.2 |
 | Auth | Laravel Breeze, Blade stack |
-| Database | MySQL `lab5_db` (XAMPP, user `root`, no password) |
-| Front-end | Bootstrap 5.3 + Bootstrap Icons (CDN), `public/css/custom.css` |
+| Database | MariaDB 10.4.32 (XAMPP MySQL), `lab5_db`, user `root`, no password |
+| Front-end | Bootstrap 5.3 + Bootstrap Icons (CDN) and `public/css/custom.css` |
+| Build | Vite/Tailwind come with Breeze but the layouts load CDN CSS, so they are unused |
+| Tooling | Composer 2.10.3, Git 2.55.0, Node 24.21.0 / npm 11.19.0 |
+| Server | `php artisan serve` → http://127.0.0.1:8000 |
 
 ```bash
 composer install
@@ -46,9 +66,7 @@ and the login/register views use the pink theme.
 
 ### Step 2 — create the test user
 
-Either run the seeder (see Part 8) or create the account by hand with Tinker, exactly as
-the exercise sheet asks:
-
+Either run the seeder (see Part 8) or create the account by hand with Tinker
 ```bash
 php artisan tinker
 ```
@@ -60,7 +78,7 @@ php artisan tinker
 >>> User::create([
         'name'              => 'RogieMart Admin',
         'email'             => 'rogielynamisola27@gmail.com',
-        'password'          => Hash::make(config('mail.mailers.smtp.password')),
+        'password'          => Hash::make('password123'),
         'email_verified_at' => now(),
     ]);
 
@@ -68,10 +86,10 @@ php artisan tinker
 >>> exit
 ```
 
-Login with **rogielynamisola27@gmail.com** and the Gmail app password held in `.env`
-(`MAIL_PASSWORD`) — `DatabaseSeeder` reads the same value, so the seeder and this
-hand-made account produce the same credentials. The `User` model casts `password` to
-`hashed`, so `DatabaseSeeder` can pass the plain string and the same hash is produced.
+Login with **rogielynamisola27@gmail.com** / **password123** — the same credentials
+`DatabaseSeeder` seeds, so the seeder and this hand-made account produce the same
+hash. The `User` model casts `password` to `hashed`, so `DatabaseSeeder` can pass the
+plain string and the same hash is produced.
 
 ## Part 3 — Models, migrations & relationships
 
@@ -158,7 +176,7 @@ php artisan migrate:fresh --seed
 
 `public/css/custom.css` keeps the Lab 4 pink palette (`#FB6F92`, `#FF8FAB`, `#FFB3C6`,
 `#FFE5EC`). Sidebar: **Dashboard / Products / Brands / Categories / Logout** (plus
-**Manage Users** for administrators).
+**Users** for administrators).
 
 ```bash
 php artisan serve
@@ -166,7 +184,7 @@ php artisan serve
 
 ## Part 10 — Testing checklist
 
-- Login as `rogielynamisola27@gmail.com` with the `.env` `MAIL_PASSWORD`; guests are bounced from every route.
+- Login as `rogielynamisola27@gmail.com` with `password123`; guests are bounced from every route.
 - Product CRUD: create with an invalid SKU duplicate, missing brand, negative price →
   custom errors shown; blank SKU / unknown brand rejected server-side.
 - Brand & Category: add via modal, duplicate name reopens the modal with the error and

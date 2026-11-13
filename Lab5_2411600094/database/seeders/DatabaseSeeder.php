@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'rogielynamisola27@gmail.com'],
             [
                 'name'              => 'RogieMart Admin',
-                'password'          => 'password123',
+                'password'          => 'password123',   // hashed by the User model cast
                 'email_verified_at' => now(),
                 'is_admin'          => true,
             ]
