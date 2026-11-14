@@ -90,9 +90,16 @@
                             <tr>
                                 <td class="text-nowrap">{{ $transaction->created_at->format('M j, Y g:i A') }}</td>
                                 <td>
-                                    <a href="{{ route('products.show', $transaction->product) }}" class="fw-semibold text-decoration-none">
-                                        {{ $transaction->product?->name ?? '— deleted product —' }}
-                                    </a>
+                                    {{-- A soft-deleted product still owns its ledger rows, so the movement
+                                         names it but no longer links to it (its page is gone from public view). --}}
+                                    @if ($transaction->product?->trashed())
+                                        <span class="fw-semibold">{{ $transaction->product->name }}</span>
+                                        <span class="badge bg-secondary ms-1">Deleted</span>
+                                    @else
+                                        <a href="{{ route('products.show', $transaction->product) }}" class="fw-semibold text-decoration-none">
+                                            {{ $transaction->product?->name ?? '— deleted product —' }}
+                                        </a>
+                                    @endif
                                 </td>
                                 <td><span class="badge {{ $transaction->typeBadgeClass() }}">{{ $transaction->typeLabel() }}</span></td>
                                 <td class="text-end fw-bold {{ $transaction->signedQuantity() >= 0 ? 'text-success' : 'text-danger' }}">

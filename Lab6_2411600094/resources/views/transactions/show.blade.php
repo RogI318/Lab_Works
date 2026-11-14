@@ -54,8 +54,13 @@
                 <div class="card-body">
                     @if($transaction->product)
                         <h5 class="mb-1">
-                            <a href="{{ route('products.show', $transaction->product) }}"
-                               class="text-decoration-none">{{ $transaction->product->name }}</a>
+                            @if($transaction->product->trashed())
+                                {{ $transaction->product->name }}
+                                <span class="badge bg-secondary ms-1 align-middle">Deleted</span>
+                            @else
+                                <a href="{{ route('products.show', $transaction->product) }}"
+                                   class="text-decoration-none">{{ $transaction->product->name }}</a>
+                            @endif
                         </h5>
                         <p class="text-muted mb-3"><code>{{ $transaction->product->sku }}</code>
                             &middot; {{ $transaction->product->category?->name }}
@@ -71,7 +76,7 @@
                             </dd>
                         </dl>
                     @else
-                        <p class="text-muted mb-0">The product was deleted; its ledger rows went with it.</p>
+                        <p class="text-muted mb-0">No product is linked to this movement.</p>
                     @endif
                 </div>
             </div>

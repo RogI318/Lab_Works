@@ -113,14 +113,43 @@ class ProductController extends Controller
             ->with('success', "Product \"{$product->name}\" updated successfully.");
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
         $name = $product->name;
-        $product->delete();   // transactions are deleted with it (cascade)
+
+        // A trashed product reaching this route means the admin asked for the
+        // permanent purge — only now does the FK cascade remove the ledger.
+        if ($product->trashed()) {
+            abort_unless($request->user()->is_admin, 403, 'Only admins may erase a product and its history.');
+
+            $product->forceDelete();
+
+            return redirect()
+                ->route('products.index', ['trashed' => 1])
+                ->with('success', "Product \"{$name}\" was permanently erased, together with its movement history.");
+        }
+
+        // Soft delete: the product disappears from every listing, but its
+        // transactions survive, so reports stay reproducible and an admin can
+        // restore it.
+        $product->delete();
 
         return redirect()
             ->route('products.index')
-            ->with('success', "Product \"{$name}\" deleted successfully.");
+            ->with('success', "Product \"{$name}\" deleted — its transaction history is kept, so it can be restored.");
+    }
+
+    /** Admin only: bring a soft-deleted product back. */
+    public function restore(Request $request, Product $product)
+    {
+        abort_unless($request->user()->is_admin, 403, 'Only admins may restore products.');
+        abort_unless($product->trashed(), 404);
+
+        $product->restore();
+
+        return redirect()
+            ->route('products.index', ['trashed' => 1])
+            ->with('success', "Product \"{$product->name}\" was restored.");
     }
 
     /* ---------------- helpers ---------------- */
@@ -129,6 +158,14 @@ class ProductController extends Controller
     private function filtered(Request $request)
     {
         $query = Product::query();
+
+        // Soft-deleted products are invisible to everyone; this admin-only
+        // view (?trashed=1) is where they get restored or purged.
+        if ($request->boolean('trashed')) {
+            abort_unless($request->user()->is_admin, 403, 'Only admins may list deleted products.');
+
+            return $query->onlyTrashed();
+        }
 
         if ($search = $request->input('search')) {
             $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")
@@ -202,7 +239,7 @@ class ProductController extends Controller
         return [
             'name.required'          => 'Please provide the product name.',
             'sku.required'           => 'Please provide a SKU (e.g., BND-PL-0101).',
-            'sku.unique'             => 'That SKU is already used by another product.',
+            'sku.unique'             => 'That SKU is already used by another product. (Deleted products keep their SKU — restore or erase them first.)',
             'category_id.required'   => 'Please select a category for this product.',
             'category_id.exists'     => 'The selected category no longer exists.',
             'brand_id.required'      => 'Please select the brand of this product.',

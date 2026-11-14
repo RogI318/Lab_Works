@@ -22,22 +22,13 @@
     </div>
 
     {{-- ===== STAT CARDS ===== --}}
-    <div class="row row-cols-2 row-cols-lg-5 g-3 mb-4">
+    <div class="row row-cols-2 row-cols-lg-4 g-3 mb-4">
         <div class="col mb-3">
             <div class="card stat-card text-center shadow-hover border-primary-custom">
                 <div class="card-body">
                     <h5 class="card-title text-muted">PRODUCTS</h5>
                     <h2 id="statProducts" class="card-text fw-bold text-primary">{{ number_format($totalProducts) }}</h2>
                     <small>Items in the catalogue</small>
-                </div>
-            </div>
-        </div>
-        <div class="col mb-3">
-            <div class="card stat-card text-center shadow-hover border-accent">
-                <div class="card-body">
-                    <h5 class="card-title text-muted">UNITS ON HAND</h5>
-                    <h2 id="statUnits" class="card-text fw-bold text-primary-custom">{{ number_format($totalUnits) }}</h2>
-                    <small>Across every category</small>
                 </div>
             </div>
         </div>
@@ -72,7 +63,7 @@
 
     <div class="row">
         {{-- ===== Alert center ===== --}}
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 mb-4">
             <div class="card shadow-hover h-100">
                 <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-bell me-1"></i>Low Stock Alerts</h5>
@@ -106,38 +97,6 @@
                         @endforelse
                     </div>
                 </div>
-            </div>
-        </div>
-
-        {{-- ===== Chart 1: status distribution ===== --}}
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-hover h-100">
-                <div class="card-header bg-light"><h5 class="mb-0">Stock Status Distribution</h5></div>
-                <div class="card-body" style="height: 300px;"><canvas id="statusChart"></canvas></div>
-            </div>
-        </div>
-
-        {{-- ===== Chart 2: units by category ===== --}}
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-hover h-100">
-                <div class="card-header bg-light"><h5 class="mb-0">Units on Hand per Category</h5></div>
-                <div class="card-body" style="height: 300px;"><canvas id="categoryChart"></canvas></div>
-            </div>
-        </div>
-
-        {{-- ===== Chart 3: value by category ===== --}}
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-hover h-100">
-                <div class="card-header bg-light"><h5 class="mb-0">Inventory Value per Category (PHP)</h5></div>
-                <div class="card-body" style="height: 300px;"><canvas id="valueChart"></canvas></div>
-            </div>
-        </div>
-
-        {{-- ===== Chart 4: 7-day movement ===== --}}
-        <div class="col-12 mb-4">
-            <div class="card shadow-hover">
-                <div class="card-header bg-light"><h5 class="mb-0">Stock In vs Stock Out - Last 7 Days</h5></div>
-                <div class="card-body" style="height: 280px;"><canvas id="movementChart"></canvas></div>
             </div>
         </div>
     </div>
@@ -232,7 +191,6 @@
 @endsection
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         // Time-based greeting (same as Lab 4)
         (function () {
@@ -244,110 +202,6 @@
             else                        tod = 'Good Night';
             document.getElementById('greeting').textContent = `${tod}, ` + @json(Auth::user()->name) + '!';
         })();
-
-        const palette = {
-            primary: '#FB6F92',
-            secondary: '#FF8FAB',
-            accent: '#FFB3C6',
-            light: '#FFC2D1',
-            success: '#28a745',
-            warning: '#f3a712',
-            danger: '#dc3545',
-            text: '#5a3d4a',
-        };
-
-        Chart.defaults.color = palette.text;
-        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-
-        const gridless = { grid: { display: false } };
-
-        // ---------- Chart 1: stock status ----------
-        new Chart(document.getElementById('statusChart'), {
-            type: 'doughnut',
-            data: {
-                labels: @json(array_keys($statusDist)),
-                datasets: [{
-                    data: @json(array_values($statusDist)),
-                    backgroundColor: [palette.success, palette.warning, palette.danger],
-                    borderWidth: 2,
-                    borderColor: '#fff',
-                }],
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
-        });
-
-        // ---------- Chart 2: units per category ----------
-        new Chart(document.getElementById('categoryChart'), {
-            type: 'bar',
-            data: {
-                labels: @json($unitsByCategory->pluck('name')),
-                datasets: [{
-                    label: 'Units on hand',
-                    data: @json($unitsByCategory->pluck('products_sum_quantity')->map(fn ($v) => (int) $v)),
-                    backgroundColor: palette.secondary,
-                    borderRadius: 6,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true }, x: gridless },
-            },
-        });
-
-        // ---------- Chart 3: value per category ----------
-        new Chart(document.getElementById('valueChart'), {
-            type: 'bar',
-            data: {
-                labels: @json($valueByCategory->pluck('category')),
-                datasets: [{
-                    label: 'Stock value (PHP)',
-                    data: @json($valueByCategory->pluck('stock_value')->map(fn ($v) => round((float) $v, 2))),
-                    backgroundColor: palette.primary,
-                    borderRadius: 6,
-                }],
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true }, y: gridless },
-            },
-        });
-
-        // ---------- Chart 4: 7-day movement ----------
-        new Chart(document.getElementById('movementChart'), {
-            type: 'line',
-            data: {
-                labels: @json($movementDays->pluck('label')),
-                datasets: [
-                    {
-                        label: 'Stock In',
-                        data: @json($movementDays->pluck('stock_in')),
-                        borderColor: palette.success,
-                        backgroundColor: 'rgba(40, 167, 69, 0.15)',
-                        tension: 0.35,
-                        fill: true,
-                    },
-                    {
-                        label: 'Stock Out',
-                        data: @json($movementDays->pluck('stock_out')),
-                        borderColor: palette.danger,
-                        backgroundColor: 'rgba(220, 53, 69, 0.12)',
-                        tension: 0.35,
-                        fill: true,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
-                scales: { y: { beginAtZero: true }, x: gridless },
-            },
-        });
     </script>
 
     {{-- Lab 6 Part 7 Step 3: 30-second AJAX polling (separate file, module pattern) --}}

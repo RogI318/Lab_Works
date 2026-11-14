@@ -22,7 +22,11 @@ class InventoryTransactionResource extends JsonResource
             'product'          => $this->whenLoaded('product', fn () => [
                 'id'   => $this->product?->id,
                 'name' => $this->product?->name,
-                'url'  => $this->product ? route('products.show', $this->product) : null,
+                // A soft-deleted product keeps its name in the ledger but has
+                // no public page, so the dashboard renders it without a link.
+                'url'  => $this->product && ! $this->product->trashed()
+                    ? route('products.show', $this->product)
+                    : null,
             ]),
             'user'             => $this->whenLoaded('user', fn () => ['name' => $this->user?->name]),
             'url'              => route('transactions.show', $this),

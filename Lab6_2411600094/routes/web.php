@@ -23,7 +23,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Products: full resource (index, create, store, show, edit, update, destroy)
-    Route::resource('products', ProductController::class);
+    // destroy() also binds trashed models: deleting an already-deleted product
+    // is the admin's "delete permanently" action.
+    Route::resource('products', ProductController::class)->withTrashed(['destroy']);
+
+    // Soft-deleted products: restore is administrator only.
+    Route::middleware('admin')->group(function () {
+        Route::put('/products/{product}/restore', [ProductController::class, 'restore'])
+            ->withTrashed()->name('products.restore');
+    });
 
     // Lab 6 Part 3: inventory transaction ledger (no edit/update —
     // movements are corrected by deleting and re-recording, admin only).

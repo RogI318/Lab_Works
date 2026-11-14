@@ -14,7 +14,6 @@
 
     const els = {
         products:  document.getElementById('statProducts'),
-        units:     document.getElementById('statUnits'),
         low:       document.getElementById('statLowStock'),
         out:       document.getElementById('statOutOfStock'),
         value:     document.getElementById('statValue'),
@@ -67,7 +66,6 @@
     function renderStats(payload) {
         const d = payload.data;
         animateValue(els.products, d.total_products);
-        animateValue(els.units, d.total_units);
         animateValue(els.low, d.low_stock_count);
         animateValue(els.out, d.out_of_stock_count);
         animateValue(els.value, d.inventory_value, 2);

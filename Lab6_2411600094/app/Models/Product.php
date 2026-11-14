@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class Product extends Model
 {
+    use SoftDeletes;
+
     public const STATUS_IN_STOCK  = 'In Stock';
     public const STATUS_LOW_STOCK = 'Low Stock';
     public const STATUS_OUT_STOCK = 'Out of Stock';

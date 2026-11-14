@@ -144,9 +144,14 @@
                                     <tr>
                                         <td class="text-nowrap">{{ $transaction->created_at->format('M j, Y g:i A') }}</td>
                                         <td>
-                                            <a href="{{ route('products.show', $transaction->product) }}" class="text-decoration-none">
-                                                {{ $transaction->product->name }}
-                                            </a>
+                                            @if ($transaction->product->trashed())
+                                                <span class="text-decoration-none">{{ $transaction->product->name }}</span>
+                                                <span class="badge bg-secondary ms-1">Deleted</span>
+                                            @else
+                                                <a href="{{ route('products.show', $transaction->product) }}" class="text-decoration-none">
+                                                    {{ $transaction->product->name }}
+                                                </a>
+                                            @endif
                                             <div class="small text-muted"><code>{{ $transaction->product->sku }}</code></div>
                                         </td>
                                         <td>

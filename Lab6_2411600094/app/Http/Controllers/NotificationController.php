@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 
@@ -17,9 +18,11 @@ class NotificationController extends Controller
 
         $productId = $notification->data['product_id'] ?? null;
 
-        return redirect($productId
-            ? route('products.show', $productId)
-            : route('dashboard'));
+        // A soft-deleted product has no page to open, but the alert is still
+        // worth marking read — so fall back to the dashboard instead of 404ing.
+        $product = $productId ? Product::find($productId) : null;
+
+        return redirect($product ? route('products.show', $product) : route('dashboard'));
     }
 
     public function readAll(Request $request)

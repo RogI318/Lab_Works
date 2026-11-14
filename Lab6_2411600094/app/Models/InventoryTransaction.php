@@ -13,12 +13,12 @@ class InventoryTransaction extends Model
     public const TYPE_IN  = 'in';
     public const TYPE_OUT = 'out';
 
-    /** Part 8: quantity is the signed difference (physical - system). */
+    /** quantity is the signed difference (physical - system) */
     public const TYPE_ADJUSTMENT = 'adjustment';
 
     public const TYPES = [self::TYPE_IN, self::TYPE_OUT, self::TYPE_ADJUSTMENT];
 
-    /** Part 8 Step 2: the causes the adjustment form offers. */
+    /** the causes the adjustment form offers. */
     public const REASONS = [
         'count_discrepancy' => 'Physical count discrepancy',
         'damaged'           => 'Damaged goods',
@@ -56,10 +56,14 @@ class InventoryTransaction extends Model
         return $query->latest('created_at');
     }
 
-    /* ---------- Relationships ---------- */
+    /*  Relationships  */
+    /**
+     * Ledger rows keep resolving their product even after it is soft-deleted:
+     * a movement is a historical fact and its report must still name it.
+     */
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->withTrashed();
     }
 
     public function user(): BelongsTo

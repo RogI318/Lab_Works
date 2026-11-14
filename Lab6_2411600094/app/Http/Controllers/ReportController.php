@@ -118,7 +118,9 @@ class ReportController extends Controller
      */
     private function movementRows(?string $from, ?string $to, array $filters = []): \Illuminate\Support\Collection
     {
-        return Product::query()
+        // withTrashed(): a movement is history, and soft-deleting a product
+        // must not silently remove its rows from the Stock Movement Report.
+        return Product::withTrashed()
             ->when($filters['product_id'] ?? null, fn ($q, $id) => $q->whereKey($id))
             ->orderBy('name')
             ->get()
