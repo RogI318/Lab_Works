@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -15,7 +16,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $products = $this->filtered($request)
-                         ->with('category', 'brand')
+                         ->with('category', 'brand', 'primarySupplier')
                          ->orderBy('name')
                          ->paginate(10)
                          ->withQueryString();
@@ -43,7 +44,12 @@ class ProductController extends Controller
         $openingStock = (int) $validated['quantity'];
 
         $product = DB::transaction(function () use ($validated, $openingStock) {
-            $product = Product::create(array_merge($validated, ['quantity' => 0]));
+            // The form's quantity is the opening stock, not a column write: the
+            // ledger below is what puts units on the shelf.
+            $data             = $this->withSupplierName($validated);
+            $data['quantity'] = 0;
+
+            $product = Product::create($data);
 
             if ($openingStock > 0) {
                 $this->recordMovement($product, InventoryTransaction::TYPE_IN, $openingStock, 'Opening stock');
@@ -59,7 +65,7 @@ class ProductController extends Controller
 
     public function show(Request $request, Product $product)
     {
-        $product->load('category', 'brand');
+        $product->load('category', 'brand', 'primarySupplier', 'suppliers');
 
         // Part 9 Step 1: full ledger with a running balance, date-filterable.
         $transactions = $product->transactionHistory(
@@ -94,7 +100,7 @@ class ProductController extends Controller
         unset($validated['quantity']);
 
         DB::transaction(function () use ($product, $validated, $newQuantity) {
-            $product->update($validated);
+            $product->update($this->withSupplierName($validated));
 
             $difference = $newQuantity - (int) $product->quantity;
 
@@ -121,6 +127,21 @@ class ProductController extends Controller
         // permanent purge — only now does the FK cascade remove the ledger.
         if ($product->trashed()) {
             abort_unless($request->user()->is_admin, 403, 'Only admins may erase a product and its history.');
+
+            // Lab 7 Part 2: purchase_order_items.product_id is RESTRICT, because
+            // an order line is evidence of a purchase. Erasing the product would
+            // erase the order it was bought on, so the purge stops here and the
+            // product stays (soft) deleted instead.
+            if ($product->purchaseOrderItems()->exists()) {
+                return redirect()
+                    ->route('products.index', ['trashed' => 1])
+                    ->with('error', sprintf(
+                        '"%s" appears on %d purchase order line(s), so it cannot be erased. '
+                        . 'It stays deleted and hidden from the catalogue.',
+                        $name,
+                        $product->purchaseOrderItems()->count()
+                    ));
+            }
 
             $product->forceDelete();
 
@@ -203,6 +224,19 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Lab 7 Part 1 Step 4: supplier_id is the real link now, but the legacy
+     * free-text `supplier` column is refreshed from it rather than dropped —
+     * Lab 6's Reports still GROUP BY that column and the product search still
+     * matches on it, so the two must never tell different stories.
+     */
+    private function withSupplierName(array $validated): array
+    {
+        $validated['supplier'] = Supplier::find($validated['supplier_id'] ?? null)?->name;
+
+        return $validated;
+    }
+
     /** SKUs are stored in capitals, exactly as the form shows them. */
     private function normalizeSku(Request $request): void
     {
@@ -216,6 +250,9 @@ class ProductController extends Controller
         return [
             'categories' => Category::orderBy('name')->get(),
             'brands'     => Brand::orderBy('name')->get(),
+            // Lab 7 Part 1: only a supplier we currently buy from may be
+            // picked; an already-saved inactive one is re-added by the form.
+            'suppliers'  => Supplier::active()->orderBy('name')->get(),
         ];
     }
 
@@ -227,10 +264,10 @@ class ProductController extends Controller
             'description'   => 'nullable|string|max:2000',
             'category_id'   => 'required|integer|exists:categories,id',
             'brand_id'      => 'required|integer|exists:brands,id',
+            'supplier_id'   => 'nullable|integer|exists:suppliers,id',
             'quantity'      => 'required|integer|min:0|max:1000000',
             'reorder_level' => 'required|integer|min:0|max:1000000',
             'unit_price'    => 'required|numeric|min:0|max:99999999.99',
-            'supplier'      => 'nullable|string|max:255',
         ];
     }
 

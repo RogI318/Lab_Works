@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -20,7 +21,7 @@ class Product extends Model
     public const STATUS_OUT_STOCK = 'Out of Stock';
 
     protected $fillable = [
-        'name', 'sku', 'description', 'category_id', 'brand_id',
+        'name', 'sku', 'description', 'category_id', 'brand_id', 'supplier_id',
         'quantity', 'reorder_level', 'unit_price', 'supplier',
     ];
 
@@ -28,6 +29,7 @@ class Product extends Model
         'quantity'      => 'integer',
         'reorder_level' => 'integer',
         'unit_price'    => 'decimal:2',
+        'supplier_id'   => 'integer',
     ];
 
     /* ---------- Relationships ---------- */
@@ -41,9 +43,56 @@ class Product extends Model
         return $this->belongsTo(Brand::class);
     }
 
+    /**
+     * Lab 7 Part 1 Step 4: the PRIMARY supplier (products.supplier_id).
+     *
+     * Named primarySupplier() rather than supplier() on purpose: `supplier` is
+     * still a real column on this table (Lab 5's free-text field, kept because
+     * Reports group by it), and an attribute always beats a relation of the
+     * same name — $product->supplier would quietly keep returning the old text.
+     * Use $product->primarySupplier for the model and $product->supplier_name
+     * for the label.
+     */
+    public function primarySupplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
+    }
+
+    /** Lab 7 Part 1: every supplier holding a price agreement for this item. */
+    public function suppliers(): BelongsToMany
+    {
+        return $this->belongsToMany(Supplier::class, 'product_supplier', 'product_id', 'supplier_id')
+                    ->withPivot(Supplier::PIVOT_COLUMNS)
+                    ->withTimestamps();
+    }
+
+    /** Preferred first, so $product->suppliers->first() is the best price. */
+    public function preferredSupplier(): BelongsToMany
+    {
+        return $this->suppliers()->wherePivot('is_preferred', true)->limit(1);
+    }
+
+    /** Relation name when linked, otherwise the legacy free-text supplier. */
+    public function getSupplierNameAttribute(): string
+    {
+        return $this->primarySupplier?->name
+            ?? $this->getAttributeValue('supplier')
+            ?? '';
+    }
+
     public function transactions(): HasMany
     {
         return $this->hasMany(InventoryTransaction::class);
+    }
+
+    /**
+     * Lab 7 Part 2: every order line this product appears on. Soft-deleted
+     * orders count — their lines still hold the foreign key, which is exactly
+     * why a purchased product cannot be erased.
+     */
+    public function purchaseOrderItems(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
     }
 
     /** Part 4 Step 1: the single newest ledger row for this product. */

@@ -91,8 +91,8 @@ class ReportController extends Controller
     /** Lab 5 export, unchanged columns, with the grand total as the last line. */
     private function exportValuation(): StreamedResponse
     {
-        $rows = Product::with('category', 'brand')->orderBy('name')->get()->map(fn (Product $p) => [
-            $p->sku, $p->name, $p->category->name, $p->brand?->name, $p->supplier,
+        $rows = Product::with('category', 'brand', 'primarySupplier')->orderBy('name')->get()->map(fn (Product $p) => [
+            $p->sku, $p->name, $p->category->name, $p->brand?->name, $p->supplier_name,
             $p->quantity, $p->reorder_level, number_format((float) $p->unit_price, 2),
             number_format($p->stockValue(), 2), $p->stockStatus(),
         ]);
@@ -136,7 +136,7 @@ class ReportController extends Controller
     /** docx wording: products at or below their reorder level, empties first. */
     private function lowStockReport(array $filters = []): \Illuminate\Support\Collection
     {
-        return Product::with('category')
+        return Product::with('category', 'primarySupplier')
             ->belowReorderLevel()
             ->when($filters['category_id'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
             ->when($filters['search'] ?? null, fn ($q, $term) => $q->where(

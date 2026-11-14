@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -21,6 +22,9 @@ class ProductSeeder extends Seeder
     {
         $categories = Category::pluck('id', 'name');
         $brands     = Brand::pluck('id', 'name');
+        // Lab 7 Part 1: the free-text supplier now also resolves to a real
+        // supplier row (SupplierSeeder runs before this seeder).
+        $suppliers  = Supplier::pluck('id', 'name');
         $userId     = User::value('id');
 
         $stanley  = 'Stanley';
@@ -142,6 +146,9 @@ class ProductSeeder extends Seeder
                 'description'   => $item['description'],
                 'brand_id'      => $brands[$item['brand']],
                 'category_id'   => $categories[$item['category']],
+                // Lab 7 Part 1: primary supplier, resolved from the same name
+                // the legacy text column stores.
+                'supplier_id'   => $suppliers[$item['supplier']] ?? null,
                 'quantity'      => 0,
                 'reorder_level' => $item['reorder'],
                 'unit_price'    => $item['price'],

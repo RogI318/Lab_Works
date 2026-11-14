@@ -145,6 +145,27 @@
                                 Reports
                             </a>
                         </li>
+                        {{-- Lab 7 Part 1 Step 6: the procurement group. More links
+                             join it in later Parts; the Gate keeps staff out. --}}
+                        @can('view-procurement')
+                            <li class="nav-item mt-3">
+                                <span class="nav-link disabled small fw-bold text-uppercase opacity-75">Procurement</span>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link ps-4 {{ request()->routeIs('suppliers.*') ? 'active' : '' }}"
+                                   href="{{ route('suppliers.index') }}">
+                                    Suppliers
+                                </a>
+                            </li>
+                            {{-- Lab 7 Part 2 Step 6 --}}
+                            <li class="nav-item">
+                                <a class="nav-link ps-4 {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}"
+                                   href="{{ route('purchase-orders.index') }}">
+                                    Purchase Orders
+                                </a>
+                            </li>
+                        @endcan
+
                         {{-- Lab 5 (latest): admins maintain accounts here, since registration is closed. --}}
                         @if ($navUser->is_admin)
                             <li class="nav-item">

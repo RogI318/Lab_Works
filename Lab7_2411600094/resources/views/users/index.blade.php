@@ -40,9 +40,8 @@
                                 </td>
                                 <td>{{ $user->email }}</td>
                                 <td>
-                                    <span class="badge {{ $user->is_admin ? 'bg-primary' : 'bg-secondary' }}">
-                                        {{ $user->is_admin ? 'Admin' : 'User' }}
-                                    </span>
+                                    {{-- Lab 7 Part 1: the four roles replace Admin/User. --}}
+                                    <span class="badge {{ $user->roleBadgeClass() }}">{{ $user->roleLabel() }}</span>
                                 </td>
                                 <td class="small text-muted">{{ $user->created_at?->format('M d, Y') }}</td>
                                 <td class="text-nowrap">
@@ -117,12 +116,23 @@
                                    class="form-control" autocomplete="new-password" required>
                         </div>
 
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="is_admin" id="user-add-admin" value="1"
-                                   @checked($addOpened && old('is_admin'))>
-                            <label class="form-check-label" for="user-add-admin">
-                                Administrator <span class="text-muted small">(can manage users)</span>
-                            </label>
+                        {{-- Lab 7 Part 1 Step 2: role replaces the admin tick-box. --}}
+                        <div class="mb-3">
+                            <label for="user-add-role" class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                            <select name="role" id="user-add-role"
+                                    class="form-select @if($addOpened) @error('role') is-invalid @enderror @endif">
+                                @foreach ($roles as $value => $label)
+                                    <option value="{{ $value }}"
+                                            @selected(old('modal_key') === 'user-add' ? old('role', 'staff') === $value : $value === 'staff')>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @if($addOpened) @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
+                            <div class="form-text">
+                                Administrator and Manager handle suppliers and purchase orders;
+                                Warehouse Staff receives deliveries; Staff keeps the Lab 5/6 screens only.
+                            </div>
                         </div>
                     </div>
 
@@ -165,9 +175,7 @@
                                     <span class="badge bg-secondary ms-1">You</span>
                                 @endif
                             </h5>
-                            <span class="badge {{ $user->is_admin ? 'bg-primary' : 'bg-secondary' }}">
-                                {{ $user->is_admin ? 'Admin' : 'User' }}
-                            </span>
+                            <span class="badge {{ $user->roleBadgeClass() }}">{{ $user->roleLabel() }}</span>
                         </div>
 
                         <table class="table table-sm mb-0">
@@ -186,7 +194,7 @@
                                 </tr>
                                 <tr>
                                     <th class="text-muted fw-semibold">Role</th>
-                                    <td>{{ $user->is_admin ? 'Administrator (can manage users)' : 'Regular user' }}</td>
+                                    <td>{{ $user->roleLabel() }}</td>
                                 </tr>
                                 <tr>
                                     <th class="text-muted fw-semibold">Email Verified</th>
@@ -256,15 +264,25 @@
                                        class="form-control" autocomplete="new-password">
                             </div>
 
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="is_admin" id="{{ $editKey }}-admin" value="1"
-                                       @checked($isSelf ? $user->is_admin : ($editOpened ? old('is_admin') : $user->is_admin))
-                                       @disabled($isSelf)>
-                                <label class="form-check-label" for="{{ $editKey }}-admin">
-                                    Administrator <span class="text-muted small">(can manage users)</span>
-                                </label>
+                            {{-- Lab 7 Part 1 Step 2: role dropdown; own row is
+                                 locked so an admin cannot demote themselves. --}}
+                            <div class="mb-3">
+                                <label for="{{ $editKey }}-role" class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                                <select name="role" id="{{ $editKey }}-role"
+                                        class="form-select @if($editOpened) @error('role') is-invalid @enderror @endif"
+                                        @disabled($isSelf)>
+                                    @foreach ($roles as $value => $label)
+                                        <option value="{{ $value }}"
+                                                @selected($editOpened ? old('role') === $value : $user->role === $value)>
+                                            {{ $label }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @if($editOpened) @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
+                                {{-- A disabled control posts nothing, so carry the real role. --}}
                                 @if ($isSelf)
-                                    <div class="form-text">You can't remove your own admin rights.</div>
+                                    <input type="hidden" name="role" value="{{ $user->role }}">
+                                    <div class="form-text">You can't change your own role.</div>
                                 @endif
                             </div>
                         </div>

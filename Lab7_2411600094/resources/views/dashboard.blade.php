@@ -80,7 +80,7 @@
                             <div class="alert alert-danger d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong><a href="{{ route('products.show', $product) }}" class="text-decoration-none">{{ $product->name }}</a></strong>
-                                    <br><small>{{ $product->category->name }} - supplier: {{ $product->supplier ?: 'not recorded' }}</small>
+                                    <br><small>{{ $product->category->name }} - supplier: {{ $product->supplier_name !== '' ? $product->supplier_name : 'not recorded' }}</small>
                                 </div>
                                 <span class="badge bg-dark">0 left</span>
                             </div>

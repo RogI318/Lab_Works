@@ -41,8 +41,27 @@
                         <dt class="col-sm-4">Brand</dt>
                         <dd class="col-sm-8">{{ $product->brand->name }}</dd>
 
+                        {{-- Lab 7 Part 1: the supplier relationship, not the old free text. --}}
                         <dt class="col-sm-4">Supplier</dt>
-                        <dd class="col-sm-8">{{ $product->supplier ?? 'Not recorded' }}</dd>
+                        <dd class="col-sm-8">
+                            @if($product->primarySupplier)
+                                <a href="{{ route('suppliers.show', $product->primarySupplier) }}">
+                                    {{ $product->supplier_name }}
+                                </a>
+                                <span class="badge {{ $product->primarySupplier->statusBadgeClass() }} ms-1">
+                                    {{ $product->primarySupplier->is_active ? 'Active' : 'Inactive' }}
+                                </span>
+                            @else
+                                <span class="text-muted">Not recorded</span>
+                            @endif
+                        </dd>
+
+                        @if($product->suppliers->count() > 1)
+                            <dt class="col-sm-4">Also supplied by</dt>
+                            <dd class="col-sm-8 small">
+                                {{ $product->suppliers->where('id', '!=', $product->supplier_id)->pluck('name')->implode(', ') }}
+                            </dd>
+                        @endif
 
                         <dt class="col-sm-4">Quantity in Stock</dt>
                         <dd class="col-sm-8 fw-bold {{ $product->needsReorder() ? 'text-danger' : 'text-success' }}">
@@ -82,7 +101,7 @@
                     </p>
                     <hr>
                     <p class="mb-0 small">
-                        Supplier on file: {{ $product->supplier ?? 'none recorded' }}.
+                        Supplier on file: {{ $product->supplier_name !== '' ? $product->supplier_name : 'none recorded' }}.
                     </p>
                 </div>
             @else

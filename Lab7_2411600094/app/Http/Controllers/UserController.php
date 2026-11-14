@@ -13,7 +13,11 @@ class UserController extends Controller
     {
         $users = User::orderBy('id')->paginate(10)->withQueryString();
 
-        return view('users.index', compact('users'));
+        // Lab 7 Part 1: value => label map the role dropdowns are built from.
+        return view('users.index', [
+            'users' => $users,
+            'roles' => User::ROLES,
+        ]);
     }
 
     public function store(Request $request)
@@ -22,19 +26,24 @@ class UserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'confirmed', Password::defaults()],
+            // Lab 7 Part 1: the role replaces the single admin tick-box.
+            'role'     => ['required', 'string', Rule::in(array_keys(User::ROLES))],
+        ], [
+            'role.required' => 'Please choose a role for this user.',
+            'role.in'       => 'The role must be Administrator, Manager, Warehouse Staff or Staff.',
         ]);
 
         $user = User::create([
             'name'              => $data['name'],
             'email'             => $data['email'],
             'password'          => $data['password'],   // hashed by the User model cast
-            'is_admin'          => $request->boolean('is_admin'),
+            'role'              => $data['role'],       // is_admin follows it — see User::booted()
             'email_verified_at' => now(),
         ]);
 
         return redirect()
             ->route('users.index')
-            ->with('success', "User \"{$user->name}\" added successfully.");
+            ->with('success', "User \"{$user->name}\" added successfully as {$user->roleLabel()}.");
     }
 
     public function update(Request $request, User $user)
@@ -43,6 +52,10 @@ class UserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
+            'role'     => ['required', 'string', Rule::in(array_keys(User::ROLES))],
+        ], [
+            'role.required' => 'Please choose a role for this user.',
+            'role.in'       => 'The role must be Administrator, Manager, Warehouse Staff or Staff.',
         ]);
 
         $user->name  = $data['name'];
@@ -55,7 +68,7 @@ class UserController extends Controller
 
         // An admin cannot take away their own admin rights (prevents locking everyone out).
         if (! $user->is(auth()->user())) {
-            $user->is_admin = $request->boolean('is_admin');
+            $user->role = $data['role'];
         }
 
         $user->save();

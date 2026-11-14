@@ -22,16 +22,16 @@ class DashboardController extends Controller
         $inventoryValue  = (float) Product::sum(DB::raw('quantity * unit_price'));
 
         // ---- Alert center ----
-        $lowStockItems = Product::with('category')
+        $lowStockItems = Product::with('category', 'primarySupplier')
                                 ->lowStock()
                                 ->orderBy('quantity')
                                 ->take(6)
                                 ->get();
 
-        $outOfStockItems = Product::with('category')->outOfStock()->orderBy('name')->take(6)->get();
+        $outOfStockItems = Product::with('category', 'primarySupplier')->outOfStock()->orderBy('name')->take(6)->get();
 
         // ---- Recent additions + latest movements ----
-        $recentProducts  = Product::with('category')->latest()->take(5)->get();
+        $recentProducts  = Product::with('category', 'primarySupplier')->latest()->take(5)->get();
         $recentMoves     = InventoryTransaction::with('product', 'user')->latest()->take(8)->get();
 
         // ---- Brand and category tables with their product counts ----

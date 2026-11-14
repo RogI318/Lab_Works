@@ -1,5 +1,5 @@
 {{-- Shared by products/create.blade.php and products/edit.blade.php (Lab 5, Part 5 Step 3).
-     Params: $product (model or null), $categories, $brands, $draftKey (create page only) --}}
+     Params: $product (model or null), $categories, $brands, $suppliers, $draftKey (create page only) --}}
 @php
     // A Brand/Category pop-up posts a "name" field too, so the product form should
     // only display errors when it was the form actually submitted.
@@ -33,13 +33,35 @@
         @if($productErrors)@error('sku')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
     </div>
 
+    {{-- Lab 7 Part 1 Step 4: the free-text supplier is now a dropdown of the
+         active supplier records. The old text column is still written behind
+         the scenes (Reports group by it), but staff never type it again. --}}
     <div class="col-md-3">
-        <label for="supplier" class="form-label fw-semibold">Supplier</label>
-        <input type="text" name="supplier" id="supplier"
-               class="form-control @if($productErrors) @error('supplier') is-invalid @enderror @endif"
-               value="{{ old('supplier') !== null && $productErrors ? old('supplier') : ($product->supplier ?? '') }}"
-               placeholder="e.g. Metro Lumber Supply">
-        @if($productErrors)@error('supplier')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
+        @php
+            $selectedSupplier = (int) (old('supplier_id') !== null && $productErrors
+                ? old('supplier_id')
+                : ($product->supplier_id ?? 0));
+
+            // A supplier retired after this product was saved must still show
+            // up, otherwise editing the product would silently drop it.
+            $currentSupplier = $product?->primarySupplier;
+            $supplierOptions = $suppliers->all();
+            if ($currentSupplier && !$suppliers->contains('id', $currentSupplier->id)) {
+                array_unshift($supplierOptions, $currentSupplier);
+            }
+        @endphp
+
+        <label for="supplier_id" class="form-label fw-semibold">Supplier</label>
+        <select name="supplier_id" id="supplier_id"
+                class="form-select @if($productErrors) @error('supplier_id') is-invalid @enderror @endif">
+            <option value="">-- no supplier on file --</option>
+            @foreach($supplierOptions as $supplier)
+                <option value="{{ $supplier->id }}" @selected($selectedSupplier === $supplier->id)>
+                    {{ $supplier->name }}{{ $supplier->is_active ? '' : ' (inactive)' }}
+                </option>
+            @endforeach
+        </select>
+        @if($productErrors)@error('supplier_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror @endif
     </div>
 
     {{-- Category: dropdown + quick-create pop-up --}}
