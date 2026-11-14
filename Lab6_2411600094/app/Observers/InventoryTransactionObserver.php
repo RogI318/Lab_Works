@@ -10,10 +10,6 @@ use App\Notifications\LowStockNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
-/**
- * Lab 6 Part 2: the single place where the ledger re-values stock on hand.
- * (Replaces the created/deleting hooks Lab 5 put in the model's booted().)
- */
 class InventoryTransactionObserver
 {
     /**
@@ -70,16 +66,10 @@ class InventoryTransactionObserver
 
             // Part 6 Step 3 — after a stock-OUT (or negative adjustment) check
             // whether the product is now at or below its reorder level.
-            // Advanced Consideration (duplicate suppression): alert only when
-            // THIS movement is what crossed the threshold, so a product that
-            // stays low does not re-alert on every further pick. The unread
-            // check is a second guard for the same movement being recorded
-            // twice, and DashboardController::syncLowStockAlerts() backfills
-            // anything an admin never heard about.
-            $crossedThreshold = $before > $product->reorder_level
-                && $after <= $product->reorder_level;
-
-            if ($delta < 0 && $crossedThreshold) {
+            // Duplicate suppression: an admin who already has an UNREAD alert
+            // for this product is skipped; once they read it (or the product
+            // is refilled and drops again) a new alert can be raised.
+            if ($delta < 0 && $product->isLowStock()) {
                 $recipients = User::admins()->get()->reject(
                     fn (User $admin) => $admin->unreadNotifications->contains(
                         fn ($n) => ($n->data['product_id'] ?? null) === $product->id
@@ -95,9 +85,8 @@ class InventoryTransactionObserver
 
     /**
      * Deleting a ledger row reverses its stock impact (admin-only in Part 3).
-     * Products soft-delete, so the product is normally still there to re-value;
-     * a permanently erased product takes its rows with it via the FK cascade
-     * and there is nothing left to correct.
+     * If the product was cascade-deleted with its transactions there is
+     * nothing left to correct.
      */
     public function deleted(InventoryTransaction $transaction): void
     {

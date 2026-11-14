@@ -9,25 +9,23 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Demo account shown on the login page (also the administrator)
-        $admin = User::updateOrCreate(
-            ['email' => 'admin@example.com'],
-            ['name' => 'Admin', 'password' => 'password123']
+        // Part 2 Step 2 — test account used for the login screenshots.
+        // This account is the administrator who can manage other users.
+        User::updateOrCreate(
+            ['email' => 'rogielynamisola27@gmail.com'],
+            [
+                'name'              => 'RogieMart Admin',
+                'password'          => 'password123',   // hashed by the User model cast
+                'email_verified_at' => now(),
+                'is_admin'          => true,
+            ]
         );
-        $admin->forceFill(['is_admin' => true])->save();
 
-        // Normal test user (Lab 5 features only)
-        $test = User::updateOrCreate(
-            ['email' => 'test@example.com'],
-            ['name' => 'John Doe', 'password' => 'password123']
-        );
-        $test->forceFill(['is_admin' => false])->save();
-
+        // Brands and categories must exist before the products that reference them.
         $this->call([
-            CourseSeeder::class,
-            StudentSeeder::class,
-            ActivitySeeder::class,
-            AssignmentTransactionSeeder::class,
+            CategorySeeder::class,
+            BrandSeeder::class,
+            ProductSeeder::class,
         ]);
     }
 }

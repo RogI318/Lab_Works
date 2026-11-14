@@ -2,64 +2,71 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Activity;
-use App\Models\Course;
-use App\Models\Student;
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\InventoryTransaction;
+use App\Models\Product;
+use App\Notifications\LowStockNotification;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // ---- Stat cards (same four as Lab 4) ----
-        $avgGpa             = round((float) Student::avg('gpa'), 2);
-        $courseCount        = Course::count();
-        $pendingAssignments = (int) Student::sum('pending_assignments');
-        $avgAttendance      = (int) round((float) Student::avg('attendance'));
+        $this->syncLowStockAlerts();
 
-        $totalStudents  = Student::count();
-        $atRiskCount    = Student::where('status', 'At Risk')->count();
-        $probationCount = Student::where('status', 'Probation')->count();
+        // ---- Stat cards (Part 7, Step 2 of the lab manual) ----
+        $totalProducts   = Product::count();
+        $lowStockCount   = Product::lowStock()->count();
+        $outOfStockCount = Product::outOfStock()->count();
+        $inventoryValue  = (float) Product::sum(DB::raw('quantity * unit_price'));
 
         // ---- Alert center ----
-        $flaggedStudents = Student::whereIn('status', ['At Risk', 'Probation'])
-                                  ->orderBy('gpa')
-                                  ->take(6)
-                                  ->get();
+        $lowStockItems = Product::with('category')
+                                ->lowStock()
+                                ->orderBy('quantity')
+                                ->take(6)
+                                ->get();
 
-        // ---- Chart 1: Quality Points (avg GPA) by Program ----
-        $gpaByProgram = Student::select('program', DB::raw('AVG(gpa) as avg_gpa'))
-                               ->groupBy('program')
-                               ->orderBy('program')
-                               ->get();
+        $outOfStockItems = Product::with('category')->outOfStock()->orderBy('name')->take(6)->get();
 
-        // ---- Chart 2: Academic Standing Distribution ----
-        $standingDist = [
-            'Good Standing' => Student::where('status', 'Good Standing')->count(),
-            'At Risk'       => $atRiskCount,
-            'Probation'     => $probationCount,
-        ];
+        // ---- Recent additions + latest movements ----
+        $recentProducts  = Product::with('category')->latest()->take(5)->get();
+        $recentMoves     = InventoryTransaction::with('product', 'user')->latest()->take(8)->get();
 
-        // ---- Chart 3: Top 5 Students by GPA ----
-        $topStudents = Student::orderByDesc('gpa')->take(5)->get();
-
-        // ---- Chart 4: Activity by Category ----
-        $activityByCategory = Activity::select('category', DB::raw('COUNT(*) as total'))
-                                      ->groupBy('category')
-                                      ->orderBy('category')
-                                      ->get();
-
-        // ---- Recent Activity table ----
-        $recentActivities = Activity::with('student')
-                                    ->orderByDesc('occurred_at')
-                                    ->take(10)
-                                    ->get();
+        // ---- Brand and category tables with their product counts ----
+        $brands     = Brand::withCount('products')->withSum('products', 'quantity')->orderBy('id')->get();
+        $categories = Category::withCount('products')->withSum('products', 'quantity')->orderBy('id')->get();
 
         return view('dashboard', compact(
-            'avgGpa', 'courseCount', 'pendingAssignments', 'avgAttendance',
-            'totalStudents', 'atRiskCount', 'probationCount',
-            'flaggedStudents', 'gpaByProgram', 'standingDist',
-            'topStudents', 'activityByCategory', 'recentActivities'
+            'totalProducts', 'lowStockCount', 'outOfStockCount', 'inventoryValue',
+            'lowStockItems', 'outOfStockItems',
+            'recentProducts', 'recentMoves', 'brands', 'categories'
         ));
+    }
+
+    /**
+     * Keep the bell in step with the dashboard's Low Stock Alerts panel:
+     * every product already at/below its reorder level gets an alert for the
+     * admin opening the page, unless that admin still has an unread one for
+     * it (so reloading never creates duplicates).
+     */
+    private function syncLowStockAlerts(): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->is_admin) {
+            return;
+        }
+
+        $alreadyAlerted = $user->unreadNotifications
+            ->pluck('data.product_id')
+            ->filter()
+            ->all();
+
+        Product::belowReorderLevel()
+            ->whereNotIn('id', $alreadyAlerted)
+            ->get()
+            ->each(fn (Product $product) => $user->notify(new LowStockNotification($product)));
     }
 }

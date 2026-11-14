@@ -30,27 +30,6 @@
         </a>
     </div>
 
-    {{-- ===== Headline figures ===== --}}
-    <div class="row mb-4">
-        @foreach([
-            ['Total Products', number_format($totals['products']), 'border-primary-custom'],
-            ['Units on Hand', number_format($totals['units']), 'border-accent'],
-            ['Inventory Value (PHP)', number_format($totals['value'], 2), 'border-success-custom'],
-            ['Low Stock Items', number_format($totals['low_stock']), 'border-warning-custom'],
-            ['Out of Stock Items', number_format($totals['out_of_stock']), 'border-danger-custom'],
-            ['Units Sold', number_format($totals['stock_out_units']), 'border-accent'],
-        ] as [$label, $value, $border])
-            <div class="col-md mb-3">
-                <div class="card stat-card text-center shadow-hover {{ $border }}">
-                    <div class="card-body">
-                        <h6 class="card-title text-muted">{{ strtoupper($label) }}</h6>
-                        <h3 class="card-text fw-bold text-primary">{{ $value }}</h3>
-                    </div>
-                </div>
-            </div>
-        @endforeach
-    </div>
-
     {{-- ===== Part 9 Step 2: one page, three reports ===== --}}
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-0">
         <ul class="nav nav-tabs">

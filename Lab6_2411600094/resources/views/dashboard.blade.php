@@ -5,12 +5,7 @@
 @section('content')
 
     <div class="pb-2 mb-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <h2 id="greeting" class="fw-bold mb-0">Inventory Dashboard</h2>
-            {{-- Part 7: real-time status line, updated by public/js/dashboard-realtime.js --}}
-            <small class="text-muted"><i class="bi bi-broadcast"></i> Live &middot; Last updated:
-                <span id="lastUpdated">page load</span> <span id="liveStatus"></span></small>
-        </div>
+        <h2 id="greeting" class="fw-bold mb-0">Inventory Dashboard</h2>
         <div class="d-flex gap-2">
             <a href="{{ route('products.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle me-1"></i> Add Product
@@ -28,7 +23,6 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">PRODUCTS</h5>
                     <h2 id="statProducts" class="card-text fw-bold text-primary">{{ number_format($totalProducts) }}</h2>
-                    <small>Items in the catalogue</small>
                 </div>
             </div>
         </div>
@@ -37,7 +31,6 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">LOW STOCK</h5>
                     <h2 id="statLowStock" class="card-text fw-bold text-warning">{{ number_format($lowStockCount) }}</h2>
-                    <small>At or below the low stock level</small>
                 </div>
             </div>
         </div>
@@ -46,7 +39,6 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">OUT OF STOCK</h5>
                     <h2 id="statOutOfStock" class="card-text fw-bold text-danger">{{ number_format($outOfStockCount) }}</h2>
-                    <small>Nothing left to sell</small>
                 </div>
             </div>
         </div>
@@ -55,7 +47,6 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">INVENTORY VALUE</h5>
                     <h2 id="statValue" class="card-text fw-bold text-success">{{ number_format($inventoryValue, 2) }}</h2>
-                    <small>PHP (quantity x unit price)</small>
                 </div>
             </div>
         </div>

@@ -150,7 +150,7 @@
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
                                    href="{{ route('users.index') }}">
-                                    Manage Users
+                                    Users
                                 </a>
                             </li>
                         @endif

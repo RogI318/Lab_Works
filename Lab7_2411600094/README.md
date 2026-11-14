@@ -1,86 +1,196 @@
-# Lab 7 – Student Portal Management with Automated Academic Monitoring and Student Support System
+# Laboratory Exercise 5 — Implementing MVC Architecture with Laravel
+## RogieMart Hardware — Inventory Management System (construction materials)
 
-A Laravel 12 Student Portal that extends Lab 5 (MVC and CRUD) and Lab 6 (admin role separation and assignment tracking).
-The lab's inventory example was adapted to a student portal:
+Laravel 12 + Breeze (Blade stack) inventory system for a hardware store selling
+construction materials: products, brands, categories and an `inventory_transactions`
+ledger, themed with the Lab 4 pink Bootstrap 5 palette.
 
-| Lab 7 example | This project |
+---
 
-| Supplier | Student |
-| Purchase Order | Academic Intervention Request |
-| Purchase Order Approval | Intervention Approval |
-| Reorder Point | Academic Backlog Threshold (5 pending assignments) |
-| Replenishment | Student Academic Support |
-| Supplier Performance | Academic Progress Monitoring |
-| Inventory Dashboard | Academic Monitoring Dashboard |
+## Part 1 — Environment setup
 
-## New features in Lab 7
+| Item | Value |
+| --- | --- |
+| Framework | Laravel 12 (PHP 8.2.12) |
+| Auth | Laravel Breeze, Blade stack |
+| Database | MySQL `lab5_db` (XAMPP, user `root`, no password) |
+| Front-end | Bootstrap 5.3 + Bootstrap Icons + Chart.js (CDN), `public/css/custom.css` |
 
-### Academic Intervention management
-- Create, view, edit and delete academic intervention requests for students
-- Approval workflow: pending → approved / rejected → in progress → completed
-- Soft deletes: deleted interventions go to an archive and can be restored
-- Reference numbers and priority levels (Low, Medium, High, Critical)
+```bash
+composer install
+copy .env.example .env      # then set APP_URL, DB_DATABASE=lab5_db, DB_USERNAME=root, DB_PASSWORD=
+php artisan key:generate
+php artisan storage:link
+```
 
-### Authorization
-- A Gate (`admin-only`) for general administrator checks
-- `AcademicInterventionPolicy` with rules based on the request status
-  (for example, only pending requests can be approved, rejected, edited or deleted)
+In `.env`:
 
-### Automation
-- Artisan command `students:check-academic-risk` finds students with heavy assignment backlogs
-- The command is scheduled daily at 08:00 and its output is logged to
-  `storage/logs/academic-risk-check.log`
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=lab5_db
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-### Email notifications (Laravel Mailables)
-- New intervention created
-- Intervention approved
-- Academic risk alert for administrators
+## Part 2 — Authentication & test user
 
-### Dashboard and performance
-- Dashboard widgets (heavy backlog, pending, approved and total interventions) provided by a View Composer
-- Statistics cached for 60 seconds with automatic cache clearing when data changes
-- JSON API endpoints for academic statistics
+```bash
+composer require laravel/breeze --dev
+php artisan breeze:install blade
+```
 
-### Search, filtering and exports
-- Interventions can be searched by reference number, type or student name/ID
-- Filters for status, priority, date range and archived records
-- CSV and PDF exports that follow the active filters
-- Academic Progress Report page with Chart.js charts
+"Remember Me" is removed from `resources/views/auth/login.blade.php` (Lab 4 login style),
+and the login/register views use the pink theme.
 
-### Testing
-- Feature tests for access control, creation, approval, soft delete and restore,
-  search, CSV export, API output and cache refresh
+### Step 2 — create the test user
 
-## Requirements
-- PHP 8.2 or higher
-- Composer
-- MySQL (XAMPP)
-- Node.js is not required to run the app
+Either run the seeder (see Part 8) or create the account by hand with Tinker, exactly as
+the exercise sheet asks:
 
-## Installation
-1. `composer install`
-2. Copy `.env.example` to `.env`
-3. `php artisan key:generate`
-4. Set your database values in `.env`
-5. `php artisan migrate`
-6. `php artisan db:seed` (see `DatabaseSeeder` for the sample admin account)
+```bash
+php artisan tinker
+```
 
-## Mail settings
-For testing, either keep `MAIL_MAILER=log` (emails appear in `storage/logs/laravel.log`)
-or copy the SMTP settings from a Mailtrap inbox into `.env`, then run `php artisan config:clear`.
-Set `APP_URL=http://127.0.0.1:8000` so email links are correct.
+```php
+>>> use App\Models\User;
+>>> use Illuminate\Support\Facades\Hash;
 
-## Commands to run
-| Command | Purpose |
-| `php artisan serve` | Start the development server |
-| `php artisan students:check-academic-risk` | Run the academic-risk check manually |
-| `php artisan schedule:list` | Show scheduled tasks |
-| `php artisan schedule:run` | Run the scheduler once |
-| `php artisan test --filter=AcademicInterventionTest` | Run the Lab 7 tests |
+>>> User::create([
+        'name'              => 'RogieMart Admin',
+        'email'             => 'admin@example.com',
+        'password'          => Hash::make('password123'),
+        'email_verified_at' => now(),
+    ]);
 
-## Main routes (administrator only)
-| URL | Description |
-|
-| `/interventions` | Intervention list with search, filters and exports |
-| `/reports/academic-progress` | Academic Progress Report |
-| `/api/academic-dashboard/stats` | Dashboard statistics (JSON) |
+>>> User::all();          // verify the account exists
+>>> exit
+```
+
+Login with **admin@example.com / password123** (or the seeded account
+`reyzlyn588@gmail.com / password123`, created as "RogieMart Admin" by `DatabaseSeeder`).
+The `User` model casts `password` to
+`hashed`, so `DatabaseSeeder` can pass the plain string and the same hash is produced.
+
+## Part 3 — Models, migrations & relationships
+
+```bash
+php artisan make:model Product -mcr
+php artisan make:model Brand -mc
+php artisan make:model Category -mc
+php artisan make:model InventoryTransaction -m
+```
+
+| Table | Columns |
+| --- | --- |
+| `brands` | `id`, `name` (unique), `description`, timestamps |
+| `categories` | `id`, `name` (unique), `description`, timestamps |
+| `products` | `id`, `name`, `sku` (unique), `description`, `brand_id` FK, `category_id` FK, `quantity` (default 0), `reorder_level`, `unit_price`, `supplier`, timestamps |
+| `inventory_transactions` | `id`, `product_id` FK, `type` (`in` / `out`), `quantity`, `reference`, `user_id` FK, timestamps |
+
+`Product` → `belongsTo(Brand)`, `belongsTo(Category)`, `hasMany(InventoryTransaction)`,
+plus `isLowStock()` / `isOutOfStock()` and the `lowStock` / `outOfStock` query scopes.
+`Brand` and `Category` → `hasMany(Product)`.
+
+`InventoryTransaction::booted()` syncs `products.quantity` on `created` / `deleting`, so
+the ledger is the source of truth for stock on hand.
+
+## Part 4 — Controllers, validation & custom messages
+
+```bash
+php artisan make:controller ProductController --resource --model=Product
+php artisan make:controller DashboardController
+php artisan make:controller ReportController
+```
+
+`ProductController` validates `name` (required, string, max), `sku` (required, unique —
+`Rule::unique('products')->ignore($id)` on update), `description`, `brand_id` /
+`category_id` (`exists:brands,id` / `exists:categories,id`), `quantity` & `reorder_level`
+(integer, min 0), `unit_price` (numeric, min 0) and `supplier`, each with its own
+`messages()` entry. `BrandController` / `CategoryController` provide index/store/update/
+destroy driven by Bootstrap modals.
+
+## Part 5 — Views
+
+- `resources/views/layouts/master.blade.php` — pink navbar + sidebar, flash messages.
+- `products/index.blade.php` — table with brand and category columns, low-stock badges,
+  view / edit / delete buttons.
+- `products/_form.blade.php` — **one partial shared by create and edit**, with CSRF,
+  validation errors and the brand / category dropdowns (each with a "+" button that opens
+  the brand/category modal so a new one can be added without leaving the form).
+- `products/show.blade.php` — product details plus its related transactions.
+- `partials/item-modal.blade.php` and `partials/item-delete-modal.blade.php` — the add /
+  edit modal (a hidden `modal_key` input reopens the modal when validation fails) and the
+  delete confirmation, reused by both brands and categories.
+
+## Part 6 — Routes
+
+```bash
+php artisan route:list
+```
+
+`routes/web.php` keeps everything behind `auth` middleware:
+
+```php
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('products', ProductController::class);
+    Route::resource('brands', BrandController::class)->except(['create', 'edit', 'show']);
+    Route::resource('categories', CategoryController::class)->except(['create', 'edit', 'show']);
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+});
+```
+
+## Part 7 — Dashboard with real data
+
+`DashboardController` supplies Total Products, Low Stock, Out of Stock and Inventory
+Value (`SUM(quantity * unit_price)`) cards, Recent Products, the Low Stock Alerts list,
+stock-movement totals, the brand and category tables (with per-row product-count badges
+and a "N brands / N categories" badge), and Chart.js charts.
+
+## Part 8 — Seeders
+
+`CategorySeeder` (Lumber, Hardware, Tools, Electrical, Plumbing, Paint) and `BrandSeeder`
+(12 hardware brands: Stanley, Makita, Bosch, DeWalt, Boysen, Davies, Philips, Firefly,
+Omni Power, Plytech, Marson, Dover) run **before**
+`ProductSeeder`, which creates 23 hardware products — a mix of in-stock, low-stock and
+out-of-stock — each linked to a brand and a category, and posts the matching `in` / `out`
+transactions (purchase orders and sales orders).
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+## Part 9 — Theme & navigation
+
+`public/css/custom.css` keeps the Lab 4 pink palette (`#FB6F92`, `#FF8FAB`, `#FFB3C6`,
+`#FFE5EC`). Sidebar: **Dashboard / Products / Brands / Categories / Reports / Logout**.
+
+```bash
+php artisan serve
+```
+
+## Part 10 — Testing checklist
+
+- Login as `admin@example.com` / `password123`; guests are bounced from every route.
+- Product CRUD: create with an invalid SKU duplicate, missing brand, negative price →
+  custom errors shown; blank SKU / unknown brand rejected server-side.
+- Brand & Category: add via modal, duplicate name reopens the modal with the error and
+  keeps the typed value, edit works in place, deleting a brand that still has products is
+  blocked with a friendly message, and the "+" button on the product form returns to the
+  form with the new option already selected and the half-typed draft restored.
+- Dashboard: cards, low-stock list and charts match the seeded data.
+- Report page and CSV export.
+
+## Part 11 — Publish to GitHub
+
+```bash
+git init
+git add .
+git commit -m "Lab 5: Inventory Management System (MVC with Laravel)"
+git branch -M main
+git remote add origin https://github.com/<username>/Lab5_2411600094.git
+git push -u origin main
+```

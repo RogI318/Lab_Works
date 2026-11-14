@@ -4,11 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\AcademicIntervention;
 
 class User extends Authenticatable
 {
@@ -24,13 +23,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'is_admin',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
@@ -46,16 +41,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            // Lab 6: minimal role flag (migration 2026_11_11_001959)
+            'is_admin' => 'boolean',
         ];
     }
 
-    public function createdInterventions(): HasMany
+    /** Users who may delete transactions and receive low-stock alerts. */
+    public function scopeAdmins(Builder $query): Builder
     {
-        return $this->hasMany(AcademicIntervention::class, 'created_by');
-    }
-
-    public function approvedInterventions(): HasMany
-    {
-        return $this->hasMany(AcademicIntervention::class, 'approved_by');
+        return $query->where('is_admin', true);
     }
 }
