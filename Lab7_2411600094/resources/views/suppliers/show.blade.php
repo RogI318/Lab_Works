@@ -92,39 +92,87 @@
 
         {{-- ===== Right: performance + activity ===== --}}
         <div class="col-lg-7 mb-4">
+            {{-- ===== Lab 7 Part 6 Step 1: the measured scorecard =====
+                 Every number here is one aggregated query for the whole
+                 supplier table, cached under the key the purchase order
+                 observer clears — see SupplierPerformanceService. --}}
             <div class="card shadow-hover mb-4">
-                <div class="card-header bg-gradient-primary text-white">
+                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0"><i class="bi bi-speedometer2 me-1"></i> Performance</h5>
+                    <a href="{{ route('reports.supplier-performance') }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-graph-up me-1"></i> Full report
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="row text-center g-3">
-                        <div class="col-4">
+                        <div class="col-6 col-lg-3">
                             <div class="stat-card p-3 h-100">
                                 <div class="fs-3 fw-bold">{{ $supplier->products_count }}</div>
                                 <div class="small text-muted">Products supplied</div>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-6 col-lg-3">
                             <div class="stat-card p-3 h-100">
-                                <div class="fs-3 fw-bold">{{ $orders->count() }}</div>
-                                <div class="small text-muted">Recent orders</div>
+                                <div class="fs-3 fw-bold">{{ $metrics['total_orders'] ?? 0 }}</div>
+                                <div class="small text-muted">Orders placed</div>
                             </div>
                         </div>
-                        <div class="col-4">
+                        <div class="col-6 col-lg-3">
                             <div class="stat-card p-3 h-100">
                                 <div class="fs-3 fw-bold">
-                                    {{ $supplier->performance_rating === null ? '—' : $supplier->performance_rating . '%' }}
+                                    {{ ($metrics['on_time_percentage'] ?? null) === null ? '—' : number_format($metrics['on_time_percentage'], 1).' %' }}
                                 </div>
                                 <div class="small text-muted">On-time delivery</div>
                             </div>
                         </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="stat-card p-3 h-100">
+                                <div class="fs-3 fw-bold">
+                                    {{ ($metrics['order_accuracy_percentage'] ?? null) === null ? '—' : number_format($metrics['order_accuracy_percentage'], 1).' %' }}
+                                </div>
+                                <div class="small text-muted">Order accuracy</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="stat-card p-3 h-100">
+                                <div class="fs-3 fw-bold">
+                                    {{ ($metrics['average_delivery_days'] ?? null) === null ? '—' : number_format($metrics['average_delivery_days'], 1) }}
+                                </div>
+                                <div class="small text-muted">Avg days, quoted {{ $supplier->leadTimeLabel() }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="stat-card p-3 h-100">
+                                <div class="fs-5 fw-bold pt-2">
+                                    {{ $metrics === null ? '—' : \App\Services\SupplierPerformanceService::varianceLabel($metrics['lead_time_variance_days']) }}
+                                </div>
+                                <div class="small text-muted">Against the quote</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <div class="stat-card p-3 h-100 text-start">
+                                <div class="small text-muted">Committed on {{ $metrics['total_orders'] ?? 0 }} placed order(s)</div>
+                                <div class="fs-4 fw-bold">PHP {{ number_format((float) ($metrics['total_order_value'] ?? 0), 2) }}</div>
+                            </div>
+                        </div>
                     </div>
 
-                    @if ($supplier->performance_rating === null)
+                    @if ($metrics === null || $metrics['received_orders'] === 0)
                         <p class="small text-muted mb-0 mt-3">
                             <i class="bi bi-info-circle me-1"></i>
-                            Nothing has been received from this supplier yet, so there is no on-time rate to
-                            report. Part 6 replaces these placeholders with the measured supplier scorecard.
+                            Nothing has been received from this supplier yet, so there is no delivery record to
+                            score. On-time rate, accuracy and lead-time variance appear once an order closes.
+                        </p>
+                    @else
+                        <p class="small text-muted mb-0 mt-3">
+                            <i class="bi bi-clipboard-data me-1"></i>
+                            Scored on {{ $metrics['received_orders'] }} received order(s)
+                            ({{ $metrics['on_time_orders'] }} on time) and {{ $metrics['lines_received'] }} ordered
+                            line(s) ({{ $metrics['lines_exact'] }} complete and exact).
+                            Orders still on the road are counted in the spend but not against the vendor.
+                            @unless ($metrics['is_active'])
+                                <span class="badge bg-secondary ms-1">Retired supplier</span>
+                            @endunless
                         </p>
                     @endif
                 </div>

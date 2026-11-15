@@ -20,50 +20,28 @@
         </div>
     </div>
 
-    {{-- ===== Filter Panel (Part 3: product / type / date range) ===== --}}
-    <div class="card shadow-hover mb-4">
-        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Filter Transactions</h5>
-            <a href="{{ route('transactions.index') }}" class="btn btn-outline-light btn-sm">Reset filters</a>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('transactions.index') }}" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Product</label>
-                    <select name="product_id" class="form-select">
-                        <option value="">All Products</option>
-                        @foreach($products as $product)
-                            <option value="{{ $product->id }}" @selected(request('product_id') == $product->id)>
-                                {{ $product->name }} ({{ $product->sku }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">Type</label>
-                    <select name="type" class="form-select">
-                        <option value="">All Types</option>
-                        <option value="in" @selected(request('type') === 'in')>Stock In</option>
-                        <option value="out" @selected(request('type') === 'out')>Stock Out</option>
-                        <option value="adjustment" @selected(request('type') === 'adjustment')>Adjustment</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">From</label>
-                    <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">To</label>
-                    <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
-                </div>
-                <div class="col-md-3">
-                    <button class="btn btn-primary w-100" type="submit">
-                        <i class="bi bi-funnel me-1"></i> Apply
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    {{-- ===== Filter Panel (Lab 6 Part 3 filters + Lab 7 Part 7: user, reference) ===== --}}
+    <x-filters.bar title="Filter Transactions" :action="route('transactions.index')" submit="Apply">
+        <x-filters.select name="product_id" label="Product" col="col-md-3"
+                          placeholder="All Products"
+                          :options="$products->mapWithKeys(fn ($p) => [$p->id => $p->name . ' (' . $p->sku . ')'])" />
+
+        <x-filters.select name="type" label="Type" col="col-md-2" placeholder="All Types"
+                          :options="[
+                            App\Models\InventoryTransaction::TYPE_IN  => 'Stock In',
+                            App\Models\InventoryTransaction::TYPE_OUT => 'Stock Out',
+                            App\Models\InventoryTransaction::TYPE_ADJUSTMENT => 'Adjustment',
+                          ]" />
+
+        <x-filters.select name="user_id" label="Recorded by" col="col-md-2"
+                          placeholder="Anyone" :options="$users->pluck('name', 'id')" />
+
+        <x-filters.text name="reference" label="Reference" col="col-md-2"
+                        placeholder="Note, invoice or PO..." />
+
+        <x-filters.date-range label="Moved between" col="col-md-3"
+                              fromName="date_from" toName="date_to" />
+    </x-filters.bar>
 
     {{-- ===== Transaction table ===== --}}
     <div class="card shadow-hover mb-4">

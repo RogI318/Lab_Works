@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Exceptions\InsufficientStockException;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
+use App\Models\User;
+use App\Services\SearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -17,16 +19,12 @@ use Illuminate\Validation\Rule;
 class InventoryTransactionController extends Controller
 {
     /** Step 2 — index: 20 per page, eager loaded, filterable. */
-    public function index(Request $request)
+    public function index(Request $request, SearchService $search)
     {
-        $transactions = InventoryTransaction::query()
-            ->with(['product', 'user'])
-            ->when($request->product_id, fn ($q, $id) => $q->where('product_id', $id))
-            ->when($request->type, fn ($q, $type) => $q->where('type', $type))
-            ->when($request->date_from, fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
-            ->when($request->date_to, fn ($q, $date) => $q->whereDate('created_at', '<=', $date))
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
+        // Lab 7 Part 7: the same four filters as before, plus who recorded the
+        // movement and a reference number, all built by SearchService. The
+        // ledger keeps its own order and its own page size.
+        $transactions = $search->searchTransactions($request->all())
             ->paginate(20)
             ->withQueryString();
 
@@ -36,6 +34,7 @@ class InventoryTransactionController extends Controller
             // modal (included in the same page) also reads quantity/reorder level.
             'products'     => Product::orderBy('name')
                 ->get(['id', 'name', 'sku', 'quantity', 'reorder_level']),
+            'users'        => User::orderBy('name')->get(['id', 'name']),
             'reasons'      => InventoryTransaction::REASONS,
         ]);
     }

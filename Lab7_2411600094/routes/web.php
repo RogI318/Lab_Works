@@ -11,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierPerformanceController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -88,6 +89,14 @@ Route::middleware('auth')->group(function () {
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+
+    // Lab 7 Part 6 Step 2: the supplier scorecard report. Its own controller and
+    // its own gate — the inventory reports answer "what is on the shelf", this
+    // one answers "what is this vendor like", and only admin and manager judge
+    // that. Declared after /reports/export so the two literal paths cannot
+    // shadow each other.
+    Route::get('/reports/supplier-performance', [SupplierPerformanceController::class, 'index'])
+        ->name('reports.supplier-performance');
 
     // Lab 5 (latest): user management — administrators only, since there is
     // no public registration any more.

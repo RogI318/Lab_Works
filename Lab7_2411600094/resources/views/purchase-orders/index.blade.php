@@ -15,54 +15,28 @@
         </div>
     </div>
 
-    {{-- ===== Filter panel ===== --}}
-    <div class="card shadow-hover mb-4">
-        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Find an Order</h5>
-            <a href="{{ route('purchase-orders.index') }}" class="btn btn-outline-light btn-sm">Reset filters</a>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('purchase-orders.index') }}" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">-- every status --</option>
-                        @foreach ($statuses as $value => $label)
-                            <option value="{{ $value }}" @selected($filters['status'] === $value)>
-                                {{ $label }} ({{ $counts[$value] ?? 0 }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+    {{-- ===== Filter panel (Lab 7 Part 7 Step 3: the shared filter components) ===== --}}
+    <x-filters.bar title="Find an Order" :action="route('purchase-orders.index')">
+        <x-filters.text name="search" label="Reference" col="col-md-3"
+                        placeholder="Reference number..." />
 
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Supplier</label>
-                    <select name="supplier" class="form-select">
-                        <option value="">-- every supplier --</option>
-                        @foreach ($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}" @selected($filters['supplier'] === $supplier->id)>
-                                {{ $supplier->name }}{{ $supplier->trashed() ? ' (deleted)' : '' }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+        <x-filters.select name="status" label="Status" col="col-md-2" placeholder="-- every status --"
+                          :options="collect($statuses)->map(fn ($label, $value) => $label . ' (' . ($counts[$value] ?? 0) . ')')" />
 
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">Ordered from</label>
-                    <input type="date" name="from" class="form-control" value="{{ $filters['from'] }}">
-                </div>
+        <x-filters.select name="supplier" label="Supplier" col="col-md-2" placeholder="-- every supplier --"
+                          :options="$suppliers->mapWithKeys(fn ($s) => [$s->id => $s->name . ($s->trashed() ? ' (deleted)' : '')])" />
 
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">Ordered to</label>
-                    <input type="date" name="to" class="form-control" value="{{ $filters['to'] }}">
-                </div>
+        <x-filters.select name="created_by" label="Raised by" col="col-md-2" placeholder="-- anyone --"
+                          :options="$users->pluck('name', 'id')" />
 
-                <div class="col-md-2">
-                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-search me-1"></i>Search</button>
-                </div>
-            </form>
-        </div>
-    </div>
+        <x-filters.date-range label="Ordered between" col="col-md-3" />
+
+        <x-filters.text name="min_amount" label="Total from (PHP)" col="col-md-2"
+                        type="number" step="0.01" />
+
+        <x-filters.text name="max_amount" label="Total up to (PHP)" col="col-md-2"
+                        type="number" step="0.01" />
+    </x-filters.bar>
 
     {{-- ===== Order table ===== --}}
     <div class="card shadow-hover mb-4">

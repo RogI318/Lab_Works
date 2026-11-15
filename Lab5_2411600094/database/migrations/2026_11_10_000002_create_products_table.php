@@ -13,7 +13,6 @@ return new class extends Migration
             $table->string('name');
             $table->string('sku')->unique();
             $table->text('description')->nullable();
-            // Every product must carry a brand and a category (professor's requirement).
             $table->foreignId('brand_id')->constrained()->restrictOnDelete();
             $table->foreignId('category_id')->constrained()->restrictOnDelete();
             $table->unsignedInteger('quantity')->default(0);

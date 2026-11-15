@@ -5,16 +5,28 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Route;
 
 /** Lab 6 Part 5/6: the notification bell actions. */
 class NotificationController extends Controller
 {
-    /** Opening an alert marks it read and jumps to the product it warns about. */
+    /** Opening an alert marks it read and jumps to whatever it warns about. */
     public function show(Request $request, DatabaseNotification $notification)
     {
         abort_unless($notification->notifiable->is($request->user()), 403);
 
         $notification->markAsRead();
+
+        // Part 3: a notification may name its own screen (the reorder summary
+        // points at the draft orders it raised). It stores the route NAME, so
+        // the link is built here, in the request, and works no matter which
+        // host or sub-folder the app is served from. Otherwise fall back to the
+        // product the Lab 6 low-stock bell is about.
+        $route = $notification->data['route'] ?? null;
+
+        if (is_string($route) && $route !== '' && Route::has($route)) {
+            return redirect()->route($route, $notification->data['route_params'] ?? []);
+        }
 
         $productId = $notification->data['product_id'] ?? null;
 

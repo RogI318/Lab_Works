@@ -7,17 +7,23 @@ use App\Models\Category;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Services\SearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, SearchService $search)
     {
-        $products = $this->filtered($request)
-                         ->with('category', 'brand', 'primarySupplier')
-                         ->orderBy('name')
+        // Lab 6's deleted-products room stays an admin room: the gate lives
+        // here, where the visitor is known, and the service only builds the
+        // query it is asked for.
+        if ($request->boolean('trashed')) {
+            abort_unless($request->user()->is_admin, 403, 'Only admins may list deleted products.');
+        }
+
+        $products = $search->searchProducts($request->all())
                          ->paginate(10)
                          ->withQueryString();
 
@@ -25,6 +31,9 @@ class ProductController extends Controller
             'products'   => $products,
             'categories' => Category::orderBy('name')->get(),
             'brands'     => Brand::orderBy('name')->get(),
+            // Lab 7 Part 7: the inventory list can now be narrowed to one
+            // supplier, so every supplier still on the books is offered.
+            'suppliers'  => Supplier::orderBy('name')->get(),
         ]);
     }
 
@@ -174,43 +183,6 @@ class ProductController extends Controller
     }
 
     /* ---------------- helpers ---------------- */
-
-    /** Search + category / brand / stock-status filters. */
-    private function filtered(Request $request)
-    {
-        $query = Product::query();
-
-        // Soft-deleted products are invisible to everyone; this admin-only
-        // view (?trashed=1) is where they get restored or purged.
-        if ($request->boolean('trashed')) {
-            abort_unless($request->user()->is_admin, 403, 'Only admins may list deleted products.');
-
-            return $query->onlyTrashed();
-        }
-
-        if ($search = $request->input('search')) {
-            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")
-                                       ->orWhere('sku', 'like', "%{$search}%")
-                                       ->orWhere('supplier', 'like', "%{$search}%"));
-        }
-
-        if ($categoryId = $request->input('category_id')) {
-            $query->where('category_id', $categoryId);
-        }
-
-        if ($brandId = $request->input('brand_id')) {
-            $query->where('brand_id', $brandId);
-        }
-
-        match ($request->input('status')) {
-            Product::STATUS_LOW_STOCK => $query->lowStock(),
-            Product::STATUS_OUT_STOCK => $query->outOfStock(),
-            Product::STATUS_IN_STOCK  => $query->whereColumn('quantity', '>', 'reorder_level'),
-            default                   => null,
-        };
-
-        return $query;
-    }
 
     /** One stock movement; the model updates the quantity on hand. */
     private function recordMovement(Product $product, string $type, int $quantity, string $reference): void

@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use App\Models\Concerns\LogsActivity;
+use App\Observers\PurchaseOrderObserver;
+use App\Support\SqlLike;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,7 +29,12 @@ use Illuminate\Support\Facades\DB;
  * Status changes are owned by PurchaseOrderPolicy; the canBe*() helpers here
  * answer only "is this order in a state where the action means anything", so a
  * rule never lives in two places.
+ *
+ * Lab 7 Part 4 Step 4: what a status change MEANS — the audit row, the mail to
+ * the right person, the cache that has gone stale — belongs to
+ * PurchaseOrderObserver, so it happens for every caller, not only the web one.
  */
+#[ObservedBy(PurchaseOrderObserver::class)]
 class PurchaseOrder extends Model
 {
     use SoftDeletes, LogsActivity;
@@ -66,6 +74,19 @@ class PurchaseOrder extends Model
         self::STATUS_PARTIALLY_RECEIVED,
     ];
 
+    /**
+     * "Placed" = the vendor was actually given the order. Lab 7 Part 6 Step 1:
+     * this is the denominator of total_orders and total_order_value — a draft, a
+     * pending or an approved order is still an intention, and a rejected or
+     * cancelled one never left the building, so none of them can be held against
+     * a supplier's record.
+     */
+    public const PLACED_STATUSES = [
+        self::STATUS_SENT,
+        self::STATUS_PARTIALLY_RECEIVED,
+        self::STATUS_RECEIVED,
+    ];
+
     protected $fillable = [
         'reference_number', 'supplier_id', 'status', 'order_date',
         'expected_delivery_date', 'sent_at', 'received_at', 'approved_at', 'rejected_at',
@@ -85,6 +106,31 @@ class PurchaseOrder extends Model
         'total'                  => 'decimal:2',
         'is_auto_generated'      => 'boolean',
     ];
+
+    /* ---------- Audit-trail context (Part 4) ---------- */
+
+    /**
+     * Extra wording a caller hands the observer so the history row can say what
+     * a status column cannot: which lines landed on a receive, why an order was
+     * cancelled. Handing it over sends nothing by itself — the observer reads it
+     * once, at the moment the status actually moves.
+     *
+     * @var array<string, mixed>
+     */
+    private array $activityContext = [];
+
+    public function withActivityContext(array $context): static
+    {
+        $this->activityContext = $context;
+
+        return $this;
+    }
+
+    /** @return array<string, mixed> */
+    public function activityContext(): array
+    {
+        return $this->activityContext;
+    }
 
     /* ---------- Relationships ---------- */
 
@@ -167,6 +213,33 @@ class PurchaseOrder extends Model
         return $query
             ->when($from, fn (Builder $q) => $q->whereDate('order_date', '>=', $from))
             ->when($to,   fn (Builder $q) => $q->whereDate('order_date', '<=', $to));
+    }
+
+    /* ---------- Query scopes (Lab 7 Part 7 Step 2) ---------- */
+
+    /**
+     * Reference number, typed the way people remember it: they read the tail
+     * ("0007") or the middle date ("20260616"), rarely the whole string.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        return SqlLike::any($query, ['reference_number'], $term);
+    }
+
+    /** Money range on the grand total, inclusive on both ends. */
+    public function scopeAmountBetween(Builder $query, float|int|null $min, float|int|null $max): Builder
+    {
+        return $query
+            ->when($min !== null, fn (Builder $q) => $q->where('total', '>=', $min))
+            ->when($max !== null, fn (Builder $q) => $q->where('total', '<=', $max));
+    }
+
+    /** Who raised the order — a User model or its id, and null means "anyone". */
+    public function scopeCreatedBy(Builder $query, User|int|null $user): Builder
+    {
+        $id = $user instanceof User ? $user->id : $user;
+
+        return $query->when($id, fn (Builder $q) => $q->where('created_by', (int) $id));
     }
 
     /* ---------- Money ---------- */

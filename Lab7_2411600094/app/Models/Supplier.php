@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\LogsActivity;
+use App\Services\SupplierPerformanceService;
+use App\Support\SqlLike;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -89,15 +91,9 @@ class Supplier extends Model
 
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
-        if (blank($term)) {
-            return $query;
-        }
-
-        return $query->where(function (Builder $q) use ($term) {
-            $q->where('name', 'like', "%{$term}%")
-              ->orWhere('contact_person', 'like', "%{$term}%")
-              ->orWhere('email', 'like', "%{$term}%");
-        });
+        // Lab 7 Part 7 Step 2: the pattern now comes from SqlLike, so a typed
+        // % or _ is looked for as itself instead of widening the search.
+        return SqlLike::any($query, ['name', 'contact_person', 'email'], $term);
     }
 
     /* ---------- Presentation helpers ---------- */
@@ -116,37 +112,34 @@ class Supplier extends Model
      * On-time delivery percentage over received purchase orders, or null when
      * nothing has been received yet (never show a fake 100 %).
      *
-     * TODO Part 6: this simple ratio becomes the full performance metric —
-     * fill rate, lead-time variance and quality rejects — cached per supplier.
+     * Lab 7 Part 6 Step 3: the formula moved to SupplierPerformanceService,
+     * where the same numbers are computed for every vendor in one grouped query
+     * — this accessor is now a lookup into that cached result, which is why the
+     * supplier list costs one query instead of one per row.
      */
     public function getPerformanceRatingAttribute(): ?float
     {
-        $received = PurchaseOrder::query()
-            ->where('supplier_id', $this->id)
-            ->where('status', PurchaseOrder::STATUS_RECEIVED)
-            ->whereNotNull('expected_delivery_date')
-            ->get(['expected_delivery_date', 'received_at']);
+        return app(SupplierPerformanceService::class)
+            ->forSupplier($this->id)['on_time_percentage'] ?? null;
+    }
 
-        if ($received->isEmpty()) {
-            return null;
-        }
-
-        $onTime = $received->filter(
-            fn (PurchaseOrder $po) => $po->received_at !== null
-                && $po->received_at->lte($po->expected_delivery_date)
-        )->count();
-
-        return round($onTime / $received->count() * 100, 1);
+    /**
+     * The whole Part 6 scorecard for this vendor (orders, on-time %, average
+     * days against the quoted lead time, line accuracy, money spent), or null
+     * while nothing has been ordered.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function performance(?string $from = null, ?string $to = null): ?array
+    {
+        return app(SupplierPerformanceService::class)->forSupplier($this->id, $from, $to);
     }
 
     public function performanceBadgeClass(): string
     {
-        return match (true) {
-            $this->performance_rating === null => 'bg-secondary',
-            $this->performance_rating >= 90    => 'bg-success',
-            $this->performance_rating >= 75    => 'bg-warning text-dark',
-            default                            => 'bg-danger',
-        };
+        // The bands belong to the service, so the badge on this row, the number
+        // in the widget and the colour in the report cannot drift apart.
+        return SupplierPerformanceService::badgeClassFor($this->performance_rating);
     }
 
     public function statusBadgeClass(): string

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
+use App\Services\SupplierPerformanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -96,7 +97,7 @@ class SupplierController extends Controller
        show
        ================================================================== */
 
-    public function show(Supplier $supplier)
+    public function show(Supplier $supplier, SupplierPerformanceService $performance)
     {
         Gate::authorize('view', $supplier);
 
@@ -108,6 +109,10 @@ class SupplierController extends Controller
             'agreements' => $supplier->pricedProducts()->orderBy('name')->get(),
             'orders'     => $this->recentOrders($supplier),
             'activities' => $supplier->activities()->with('user')->take(10)->get(),
+            // Lab 7 Part 6 Step 1: the measured scorecard, or null while nothing
+            // has ever been ordered from this vendor. One read of the cached
+            // all-supplier aggregate, so opening ten profiles costs one query.
+            'metrics'    => $performance->forSupplier($supplier->id),
         ]);
     }
 

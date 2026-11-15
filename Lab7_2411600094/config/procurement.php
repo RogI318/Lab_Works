@@ -35,5 +35,30 @@ return [
     'cache' => [
         'supplier_performance_ttl' => 60 * 30,   // 30 minutes
         'reorder_report_ttl'       => 60 * 10,   // 10 minutes
+
+        // Part 5 — the two order widgets read rows that move while somebody is
+        // looking at the dashboard, so their entries are short-lived. The TTL is
+        // only the backstop: PurchaseOrderObserver deletes these keys on every
+        // status change, which is why an approval shows up inside one poll.
+        'pending_orders_ttl'       => 60,        // 1 minute
+        'recent_orders_ttl'        => 60,        // 1 minute
+
+        // The key names live here too, so the writer (the Part 3 reorder engine,
+        // the Part 4 observer) and the reader (the Part 5 dashboard widgets) can
+        // never drift apart: every key listed here is exactly what a change
+        // clears, so a widget added in Part 6 is invalidated for free.
+        'keys' => [
+            'reorder_report'       => 'procurement.reorder_report',
+            'supplier_performance' => 'procurement.supplier_performance',
+            'pending_orders'       => 'procurement.pending_orders',
+            'recent_orders'        => 'procurement.recent_orders',
+
+            // Part 6 Step 1 — the supplier report caches one entry PER DATE
+            // RANGE, and a range cannot be guessed by name. So the observer
+            // clears this stamp instead: the next read mints a new one and every
+            // older ranged entry stops being reachable at once. Adding it to
+            // this list is all it took — the flush already loops over these.
+            'supplier_performance_epoch' => 'procurement.supplier_performance.epoch',
+        ],
     ],
 ];

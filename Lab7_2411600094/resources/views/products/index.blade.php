@@ -13,56 +13,30 @@
         </div>
     </div>
 
-    {{-- ===== Filter Panel ===== --}}
-    <div class="card shadow-hover mb-4">
-        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Filter Inventory</h5>
-            <a href="{{ route('products.index') }}" class="btn btn-outline-light btn-sm">Reset filters</a>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('products.index') }}" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Search</label>
-                    <input type="text" name="search" class="form-control"
-                           placeholder="Name, SKU or supplier..." value="{{ request('search') }}">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Category</label>
-                    <select name="category_id" class="form-select">
-                        <option value="">All Categories</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" @selected(request('category_id') == $category->id)>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Brand</label>
-                    <select name="brand_id" class="form-select">
-                        <option value="">All Brands</option>
-                        @foreach($brands as $brand)
-                            <option value="{{ $brand->id }}" @selected(request('brand_id') == $brand->id)>
-                                {{ $brand->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">Stock Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">All Statuses</option>
-                        @foreach(['In Stock', 'Low Stock', 'Out of Stock'] as $st)
-                            <option value="{{ $st }}" @selected(request('status') === $st)>{{ $st }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-1 d-flex gap-2">
-                    <button class="btn btn-primary flex-grow-1" type="submit"><i class="bi bi-search"></i></button>
-                </div>
-            </form>
-        </div>
-    </div>
+    {{-- ===== Filter Panel (Lab 7 Part 7 Step 3: the shared filter components) ===== --}}
+    <x-filters.bar title="Filter Inventory" :action="route('products.index')" submit="" button="col-md-1">
+        <x-filters.text name="search" label="Search"
+                        placeholder="Name, SKU or supplier..." col="col-md-3" />
+
+        <x-filters.select name="category_id" label="Category" col="col-md-2"
+                          placeholder="All Categories" :options="$categories->pluck('name', 'id')" />
+
+        <x-filters.select name="brand_id" label="Brand" col="col-md-2"
+                          placeholder="All Brands" :options="$brands->pluck('name', 'id')" />
+
+        <x-filters.select name="supplier_id" label="Supplier" col="col-md-2"
+                          placeholder="All Suppliers" :options="$suppliers->pluck('name', 'id')" />
+
+        <x-filters.select name="status" label="Stock Status" col="col-md-2"
+                          placeholder="All Statuses" :options="App\Models\Product::STOCK_STATUSES" />
+
+        <x-filters.select name="sort" label="Sort by" col="col-md-2" :options="[
+                            'name'          => 'Name (A to Z)',
+                            'quantity'      => 'Quantity (most first)',
+                            'unit_price'    => 'Unit price (highest first)',
+                            'newest'        => 'Recently added',
+                          ]" />
+    </x-filters.bar>
 
     {{-- ===== Product table ===== --}}
     <div class="card shadow-hover mb-4">

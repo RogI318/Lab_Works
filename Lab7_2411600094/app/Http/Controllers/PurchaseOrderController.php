@@ -6,6 +6,8 @@ use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
+use App\Models\User;
+use App\Services\SearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +24,11 @@ use Illuminate\Validation\ValidationException;
  *                              anything right now? (friendly flash, not a 403)
  *   3. authorize($ability)     — is this person allowed to ask for this move?
  *   4. DB::transaction         — header + lines + ledger rows commit together
- *   5. logActivity             — the approval history the show page renders
+ *   5. the status changes      — and that is the last this class says about it:
+ *                              PurchaseOrderObserver turns the change into the
+ *                              history entry and the mail (Lab 7 Part 4), so an
+ *                              engine, a queue or a future API route gets the
+ *                              same treatment as the button.
  *
  * The status check sits between the two authorizations on purpose: the policy
  * also refuses a wrongly-timed action, so asking it first would turn every
@@ -38,34 +44,21 @@ class PurchaseOrderController extends Controller
        index
        ================================================================== */
 
-    public function index(Request $request)
+    public function index(Request $request, SearchService $search)
     {
         $this->authorize('viewAny', PurchaseOrder::class);
 
-        $filters = [
-            'status'   => array_key_exists((string) $request->input('status'), PurchaseOrder::STATUSES)
-                            ? $request->input('status') : null,
-            'supplier' => $request->integer('supplier') ?: null,
-            'from'     => $request->input('from'),
-            'to'       => $request->input('to'),
-        ];
-
-        $orders = PurchaseOrder::query()
-            ->with(['supplier', 'creator'])
-            ->withCount('items')
-            ->byStatus($filters['status'])
-            ->forSupplier($filters['supplier'])
-            ->betweenDates($filters['from'], $filters['to'])
-            // Newest order date first; same day, newest record first.
-            ->orderByDesc('order_date')
-            ->orderByDesc('id')
+        // Lab 7 Part 7: reference text, supplier, status, date range, amount
+        // range and who raised it are all SearchService's doing now; the page
+        // keeps its own page size and its newest-first default.
+        $orders = $search->searchPurchaseOrders($request->all())
             ->paginate(10)
             ->withQueryString();
 
         return view('purchase-orders.index', [
             'orders'    => $orders,
-            'filters'   => $filters,
             'suppliers' => Supplier::withTrashed()->orderBy('name')->get(),
+            'users'     => User::orderBy('name')->get(['id', 'name']),
             'statuses'  => PurchaseOrder::STATUSES,
             'counts'    => PurchaseOrder::query()
                             ->selectRaw('status, count(*) as aggregate')
@@ -109,9 +102,10 @@ class PurchaseOrderController extends Controller
             $order = PurchaseOrder::create([
                 'reference_number'       => PurchaseOrder::generateReferenceNumber($validated['order_date']),
                 'supplier_id'            => $validated['supplier_id'],
-                'status'                 => $submitNow
-                                            ? PurchaseOrder::STATUS_PENDING
-                                            : PurchaseOrder::STATUS_DRAFT,
+                // Even "save and submit" starts as a draft, and the move to
+                // pending is a separate update: that is what lets the observer
+                // see a real transition instead of guessing from a create.
+                'status'                 => PurchaseOrder::STATUS_DRAFT,
                 'order_date'             => $validated['order_date'],
                 'expected_delivery_date' => $validated['expected_delivery_date'] ?? null,
                 'notes'                  => $validated['notes'] ?? null,
@@ -129,10 +123,7 @@ class PurchaseOrderController extends Controller
             ), ['total' => (float) $order->total]);
 
             if ($submitNow) {
-                $order->logActivity('submitted', sprintf(
-                    '%s was submitted for approval on creation.',
-                    $order->reference_number
-                ));
+                $order->update(['status' => PurchaseOrder::STATUS_PENDING]);
             }
 
             return $order;
@@ -248,13 +239,6 @@ class PurchaseOrderController extends Controller
                 count($validated['items']),
                 number_format((float) $purchaseOrder->total, 2)
             ), ['total' => (float) $purchaseOrder->total]);
-
-            if ($submitNow) {
-                $purchaseOrder->logActivity('submitted', sprintf(
-                    '%s was submitted for approval.',
-                    $purchaseOrder->reference_number
-                ));
-            }
         });
 
         return redirect()
@@ -278,10 +262,6 @@ class PurchaseOrderController extends Controller
         $this->authorize('submit', $purchaseOrder);
 
         $purchaseOrder->update(['status' => PurchaseOrder::STATUS_PENDING]);
-        $purchaseOrder->logActivity('submitted', sprintf(
-            '%s was submitted for approval.',
-            $purchaseOrder->reference_number
-        ));
 
         return back()->with('success', sprintf(
             '%s is now pending approval. A manager or administrator who did not raise it can approve it.',
@@ -306,17 +286,9 @@ class PurchaseOrderController extends Controller
             'approved_at' => now(),
         ]);
 
-        $purchaseOrder->logActivity('approved', sprintf(
-            '%s (PHP %s) was approved by %s.',
-            $purchaseOrder->reference_number,
-            number_format((float) $purchaseOrder->total, 2),
-            $request->user()->name
-        ), ['total' => (float) $purchaseOrder->total]);
-
-        // Lab 7 Part 4 wires the "your order was approved" mail here:
-        //   Notification::send($purchaseOrder->creator, new PurchaseOrderStatusNotification(...))
-        // Kept as a comment rather than a half-built listener so Part 2 stays
-        // runnable on its own.
+        // PurchaseOrderObserver writes the history row and mails the creator.
+        // The status gate above already guarantees this is a real approval, and
+        // wasChanged('status') there guarantees a second click sends nothing.
 
         return back()->with('success', sprintf('%s approved.', $purchaseOrder->reference_number));
     }
@@ -346,14 +318,10 @@ class PurchaseOrderController extends Controller
             'rejection_reason' => $validated['rejection_reason'],
         ]);
 
-        $purchaseOrder->logActivity('rejected', sprintf(
-            '%s was rejected by %s: %s',
-            $purchaseOrder->reference_number,
-            $request->user()->name,
-            $validated['rejection_reason']
-        ), ['reason' => $validated['rejection_reason']]);
-
-        // Lab 7 Part 4: the rejection mail to the creator is sent from here.
+        // The observer records the rejection from rejection_reason, which is why
+        // the reason is saved in the same update rather than only announced in
+        // the flash message. Part 4's four mailables do not include a rejection
+        // mail — the buyer sees it on the order's own history.
 
         return back()->with('warning', sprintf('%s rejected.', $purchaseOrder->reference_number));
     }
@@ -374,14 +342,7 @@ class PurchaseOrderController extends Controller
             'sent_at' => now(),
         ]);
 
-        $purchaseOrder->logActivity('sent', sprintf(
-            '%s was sent to %s (%s).',
-            $purchaseOrder->reference_number,
-            $purchaseOrder->supplier->name,
-            $purchaseOrder->supplier->email
-        ));
-
-        // Lab 7 Part 4: the PO document mail to the supplier is sent from here.
+        // The observer mails the vendor the order document and copies the buyer.
 
         return back()->with('success', sprintf(
             '%s marked as sent to %s.',
@@ -417,17 +378,14 @@ class PurchaseOrderController extends Controller
             $validated['cancellation_reason']
         );
 
-        $purchaseOrder->update([
-            'status' => PurchaseOrder::STATUS_CANCELLED,
-            'notes'  => trim(($purchaseOrder->notes ? $purchaseOrder->notes . "\n" : '') . $note),
-        ]);
-
-        $purchaseOrder->logActivity('cancelled', sprintf(
-            '%s was cancelled by %s: %s',
-            $purchaseOrder->reference_number,
-            $request->user()->name,
-            $validated['cancellation_reason']
-        ), ['reason' => $validated['cancellation_reason']]);
+        // The reason travels to the observer as context: notes keep the human
+        // sentence, the history row keeps the same wording it had in Part 2.
+        $purchaseOrder
+            ->withActivityContext(['reason' => $validated['cancellation_reason']])
+            ->update([
+                'status' => PurchaseOrder::STATUS_CANCELLED,
+                'notes'  => trim(($purchaseOrder->notes ? $purchaseOrder->notes . "\n" : '') . $note),
+            ]);
 
         return back()->with('warning', sprintf('%s cancelled.', $purchaseOrder->reference_number));
     }
@@ -522,25 +480,20 @@ class PurchaseOrderController extends Controller
             // Complete when every line has its full quantity on the shelf.
             $stillOutstanding = $locked->items->sum('outstanding_quantity');
 
-            $locked->update([
-                'status'      => $stillOutstanding === 0
-                                    ? PurchaseOrder::STATUS_RECEIVED
-                                    : PurchaseOrder::STATUS_PARTIALLY_RECEIVED,
-                'received_at' => $stillOutstanding === 0 ? now() : null,
-            ]);
-
-            $locked->logActivity('received', sprintf(
-                '%d line(s) received against %s: %s. %s',
-                count($moved),
-                $locked->reference_number,
-                implode(', ', $lineLog),
-                $stillOutstanding === 0
-                    ? 'The order is complete.'
-                    : "{$stillOutstanding} unit(s) still outstanding."
-            ), [
-                'lines'       => $lineLog,
-                'outstanding' => $stillOutstanding,
-            ]);
+            $locked
+                // What arrived and what is still owed cannot be read back out of
+                // a status column, so it goes to the observer as context and the
+                // observer owns the history row.
+                ->withActivityContext([
+                    'lines'       => $lineLog,
+                    'outstanding' => $stillOutstanding,
+                ])
+                ->update([
+                    'status'      => $stillOutstanding === 0
+                                        ? PurchaseOrder::STATUS_RECEIVED
+                                        : PurchaseOrder::STATUS_PARTIALLY_RECEIVED,
+                    'received_at' => $stillOutstanding === 0 ? now() : null,
+                ]);
 
             return ['count' => count($moved), 'outstanding' => $stillOutstanding];
         });
@@ -571,12 +524,8 @@ class PurchaseOrderController extends Controller
 
         $reference = $purchaseOrder->reference_number;
 
+        // Soft delete; the observer records it and drops the stale counts.
         $purchaseOrder->delete();
-        $purchaseOrder->logActivity('deleted', sprintf(
-            'Draft %s was deleted by %s.',
-            $reference,
-            auth()->user()->name
-        ));
 
         return redirect()
             ->route('purchase-orders.index')

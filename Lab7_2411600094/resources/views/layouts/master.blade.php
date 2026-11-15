@@ -164,6 +164,17 @@
                                     Purchase Orders
                                 </a>
                             </li>
+                            {{-- Lab 7 Part 6 Step 2: its own gate inside the
+                                 procurement group — warehouse staff run the
+                                 orders, they do not score the vendors. --}}
+                            @can('view-supplier-reports')
+                                <li class="nav-item">
+                                    <a class="nav-link ps-4 {{ request()->routeIs('reports.supplier-performance') ? 'active' : '' }}"
+                                       href="{{ route('reports.supplier-performance') }}">
+                                        Supplier Performance
+                                    </a>
+                                </li>
+                            @endcan
                         @endcan
 
                         {{-- Lab 5 (latest): admins maintain accounts here, since registration is closed. --}}

@@ -43,9 +43,35 @@ class UserManagementTest extends TestCase
             'email'                 => 'staff@example.com',
             'password'              => 'password123',
             'password_confirmation' => 'password123',
+            // Lab 7 Part 1: role replaced the single admin tick-box and is now
+            // required — is_admin is derived from it, never typed by hand.
+            'role'                  => 'staff',
         ])->assertRedirect(route('users.index'));
 
-        $this->assertDatabaseHas('users', ['email' => 'staff@example.com', 'is_admin' => false]);
+        $this->assertDatabaseHas('users', [
+            'email'    => 'staff@example.com',
+            'role'     => 'staff',
+            'is_admin' => false,
+        ]);
+    }
+
+    public function test_the_administrator_role_is_what_makes_a_user_an_admin(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->post('/users', [
+            'name'                  => 'New Admin',
+            'email'                 => 'newadmin@example.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+            'role'                  => 'admin',
+        ])->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseHas('users', [
+            'email'    => 'newadmin@example.com',
+            'role'     => 'admin',
+            'is_admin' => true,
+        ]);
     }
 
     public function test_admin_cannot_delete_themselves(): void

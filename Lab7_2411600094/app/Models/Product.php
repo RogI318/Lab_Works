@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SqlLike;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,9 @@ class Product extends Model
     public const STATUS_IN_STOCK  = 'In Stock';
     public const STATUS_LOW_STOCK = 'Low Stock';
     public const STATUS_OUT_STOCK = 'Out of Stock';
+
+    /** The three labels a stock-status dropdown offers, in that order. */
+    public const STOCK_STATUSES = [self::STATUS_IN_STOCK, self::STATUS_LOW_STOCK, self::STATUS_OUT_STOCK];
 
     protected $fillable = [
         'name', 'sku', 'description', 'category_id', 'brand_id', 'supplier_id',
@@ -230,5 +234,55 @@ class Product extends Model
         $id = $category instanceof Category ? $category->id : (int) $category;
 
         return $query->where('category_id', $id);
+    }
+
+    /* ---------- Query scopes (Lab 7 Part 7 Step 2) ---------- */
+
+    /**
+     * Free-text search across the three columns the inventory box has always
+     * matched on: the name, the SKU, and the legacy supplier text. That last
+     * one stays in the list because Lab 6's Reports still GROUP BY it, so a
+     * search that ignored it would miss rows the reports still name.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        return SqlLike::any($query, ['name', 'sku', 'supplier'], $term);
+    }
+
+    /** The real supplier link (Lab 7 Part 1), as a Supplier model or an id. */
+    public function scopeForSupplier(Builder $query, Supplier|int|null $supplier): Builder
+    {
+        $id = $supplier instanceof Supplier ? $supplier->id : $supplier;
+
+        return $query->when($id, fn (Builder $q) => $q->where('supplier_id', (int) $id));
+    }
+
+    /** Mirrors scopeInCategory: a Brand model, its id, or its name. */
+    public function scopeInBrand(Builder $query, Brand|int|string $brand): Builder
+    {
+        if (is_string($brand) && ! ctype_digit($brand)) {
+            return $query->whereHas('brand', fn (Builder $q) => $q->where('name', $brand));
+        }
+
+        $id = $brand instanceof Brand ? $brand->id : (int) $brand;
+
+        return $query->where('brand_id', $id);
+    }
+
+    /** The third of the In/Low/Out triple; the other two already existed. */
+    public function scopeInStock(Builder $query): Builder
+    {
+        return $query->whereColumn('quantity', '>', 'reorder_level');
+    }
+
+    /** Everything the stock-status filter can ask for, by its display label. */
+    public function scopeStockStatus(Builder $query, ?string $status): Builder
+    {
+        return match ($status) {
+            self::STATUS_LOW_STOCK => $query->lowStock(),
+            self::STATUS_OUT_STOCK => $query->outOfStock(),
+            self::STATUS_IN_STOCK  => $query->inStock(),
+            default                => $query,
+        };
     }
 }

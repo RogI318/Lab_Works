@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Observers\InventoryTransactionObserver;
+use App\Support\SqlLike;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -54,6 +56,46 @@ class InventoryTransaction extends Model
     public function scopeRecent($query)
     {
         return $query->latest('created_at');
+    }
+
+    /* ---------- Query scopes (Lab 7 Part 7 Step 2) ---------- */
+
+    /** A Product model or its id; null means "every product". */
+    public function scopeForProduct(Builder $query, Product|int|null $product): Builder
+    {
+        $id = $product instanceof Product ? $product->id : $product;
+
+        return $query->when($id, fn (Builder $q) => $q->where('product_id', (int) $id));
+    }
+
+    /** One of in / out / adjustment; anything else leaves the set untouched. */
+    public function scopeOfType(Builder $query, ?string $type): Builder
+    {
+        return in_array($type, self::TYPES, true)
+            ? $query->where('type', $type)
+            : $query;
+    }
+
+    /** Who recorded the movement. */
+    public function scopeByUser(Builder $query, User|int|null $user): Builder
+    {
+        $id = $user instanceof User ? $user->id : $user;
+
+        return $query->when($id, fn (Builder $q) => $q->where('user_id', (int) $id));
+    }
+
+    /** The ledger is stamped by created_at, and both days count. */
+    public function scopeBetweenDates(Builder $query, ?string $from, ?string $to): Builder
+    {
+        return $query
+            ->when($from, fn (Builder $q) => $q->whereDate('created_at', '>=', $from))
+            ->when($to,   fn (Builder $q) => $q->whereDate('created_at', '<=', $to));
+    }
+
+    /** Delivery note / invoice / PO reference as printed on the paper. */
+    public function scopeWithReference(Builder $query, ?string $reference): Builder
+    {
+        return SqlLike::any($query, ['reference_number'], $reference);
     }
 
     /*  Relationships  */

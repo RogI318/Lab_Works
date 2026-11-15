@@ -52,6 +52,29 @@
         </div>
     </div>
 
+    {{-- =====================================================================
+         Lab 7 Part 5 Step 3: Procurement Overview.
+
+         The @can is the whole optimization: a view composer only runs when its
+         partial renders, and staff — who cannot pass this gate — render none of
+         it, so the four procurement queries never execute for them. Managers,
+         warehouse staff and admins get 2x2 cards on desktop, stacked on a
+         phone. Everything below is the Lab 6 dashboard, unchanged.
+         ===================================================================== --}}
+    @can('view-procurement')
+        <div class="pb-2 mb-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h2 class="fw-bold mb-0 h4">Procurement Overview</h2>
+            <span id="procurementUpdated" class="small text-muted"></span>
+        </div>
+
+        <div class="row row-cols-1 row-cols-lg-2 g-3 mb-4">
+            <div class="col">@include('widgets.pending-orders')</div>
+            <div class="col">@include('widgets.recent-orders')</div>
+            <div class="col">@include('widgets.supplier-performance')</div>
+            <div class="col">@include('widgets.reorder-alerts')</div>
+        </div>
+    @endcan
+
     <div class="row">
         {{-- ===== Alert center ===== --}}
         <div class="col-12 mb-4">
@@ -206,5 +229,20 @@
             },
         };
     </script>
+    {{-- Lab 7 Part 5 Step 4: the same 30-second poll also repaints the four
+         procurement widgets. The block is inside @can for the same reason the
+         section is: staff never get URLs they would only be refused. --}}
+    @can('view-procurement')
+        <script>
+            window.LAB7_PROCUREMENT = {
+                endpoints: {
+                    'pending-orders':       @json(url('/api/dashboard/pending-orders')),
+                    'recent-orders':        @json(url('/api/dashboard/recent-orders')),
+                    'supplier-performance': @json(url('/api/dashboard/supplier-performance')),
+                    'reorder-alerts':       @json(url('/api/dashboard/reorder-alerts')),
+                },
+            };
+        </script>
+    @endcan
     <script src="{{ asset('js/dashboard-realtime.js') }}"></script>
 @endpush
