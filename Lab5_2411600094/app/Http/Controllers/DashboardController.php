@@ -11,7 +11,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // ---- Stat cards (Part 7, Step 2 of the lab manual) ----
+        // ---- Stat cards  ----
         $totalProducts   = Product::count();
         $lowStockCount   = Product::lowStock()->count();
         $outOfStockCount = Product::outOfStock()->count();

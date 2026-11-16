@@ -76,8 +76,6 @@ class ProductController extends Controller
             ->with('success', "Product \"{$name}\" deleted successfully.");
     }
 
-    /* ---------------- helpers ---------------- */
-
     /** Search + category / brand / stock-status filters. */
     private function filtered(Request $request)
     {
@@ -107,7 +105,6 @@ class ProductController extends Controller
         return $query;
     }
 
-    /** SKUs are stored in capitals, exactly as the form shows them. */
     private function normalizeSku(Request $request): void
     {
         if ($request->has('sku')) {

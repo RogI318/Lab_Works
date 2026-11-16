@@ -12,10 +12,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Part 6 Step 1 — every inventory page sits behind the auth middleware.
 Route::middleware('auth')->group(function () {
 
-    // Dashboard — real inventory statistics from MySQL
+    // Dashboard 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Products: full resource (index, create, store, show, edit, update, destroy)

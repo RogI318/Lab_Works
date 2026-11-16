@@ -22,7 +22,6 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">TOTAL PRODUCTS</h5>
                     <h2 class="card-text fw-bold text-primary">{{ number_format($totalProducts) }}</h2>
-                    <small>Items in the catalogue</small>
                 </div>
             </div>
         </div>
@@ -31,7 +30,6 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">LOW STOCK</h5>
                     <h2 class="card-text fw-bold text-warning">{{ number_format($lowStockCount) }}</h2>
-                    <small>At or below the low stock level</small>
                 </div>
             </div>
         </div>
@@ -40,7 +38,6 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">OUT OF STOCK</h5>
                     <h2 class="card-text fw-bold text-danger">{{ number_format($outOfStockCount) }}</h2>
-                    <small>Out of stock</small>
                 </div>
             </div>
         </div>
@@ -49,7 +46,6 @@
                 <div class="card-body">
                     <h5 class="card-title text-muted">INVENTORY VALUE</h5>
                     <h2 class="card-text fw-bold text-success">{{ number_format($inventoryValue, 2) }}</h2>
-                    <small>PHP (quantity x unit price)</small>
                 </div>
             </div>
         </div>
