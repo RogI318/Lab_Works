@@ -9,10 +9,8 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Lab 6 Part 6: low stock alert. Queued (database driver) so the HTTP
- * request that drained the stock never waits on email delivery; the
- * database channel feeds the navbar bell, the mail channel reaches admins
- * even when they are not logged in.
+ * Lab 6 Part 6: low stock alert. The database channel feeds the navbar bell,
+ * while email is deferred until after the response so no queue worker is needed.
  */
 class LowStockNotification extends Notification implements ShouldQueue
 {
@@ -31,17 +29,14 @@ class LowStockNotification extends Notification implements ShouldQueue
     }
 
     /**
-     * The bell (database channel) must appear the moment stock drops, so it
-     * runs on the `sync` connection. Only the e-mail goes through the queue
-     * (php artisan queue:work), exactly as Part 6 of the docx describes.
-     * Without this, a queued database notification stays in the jobs table
-     * until a worker runs and the bell looks "broken".
+     * Show the bell notification immediately, then send email after the
+     * response without requiring a persistent queue worker.
      */
     public function viaConnections(): array
     {
         return [
             'database' => 'sync',
-            'mail'     => config('queue.default'),
+            'mail'     => 'deferred',
         ];
     }
 

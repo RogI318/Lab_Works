@@ -41,7 +41,7 @@
                                 <td>{{ $user->email }}</td>
                                 <td>
                                     <span class="badge {{ $user->is_admin ? 'bg-primary' : 'bg-secondary' }}">
-                                        {{ $user->is_admin ? 'Admin' : 'User' }}
+                                        {{ $user->is_admin ? 'Admin' : 'Staff' }}
                                     </span>
                                 </td>
                                 <td class="small text-muted">{{ $user->created_at?->format('M d, Y') }}</td>
@@ -54,8 +54,8 @@
                                             data-bs-toggle="modal" data-bs-target="#user-edit-{{ $user->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    {{-- An admin can only view and edit their own account; no delete button on their own row. --}}
-                                    @unless ($user->is(auth()->user()))
+                                    {{-- Admin accounts (including your own) can't be deleted: no delete button on admin rows. --}}
+                                    @unless ($user->is_admin)
                                         <button type="button" class="btn btn-sm btn-danger" title="Delete"
                                                 data-bs-toggle="modal" data-bs-target="#user-delete-{{ $user->id }}">
                                             <i class="bi bi-trash"></i>
@@ -73,7 +73,10 @@
     </div>
 
     {{-- ===== Add User modal ===== --}}
-    @php $addOpened = old('modal_key') === 'user-add'; @endphp
+    @php
+        $addOpened = old('modal_key') === 'user-add';
+        $addRole = (string) ($addOpened ? old('role', '') : '');
+    @endphp
     <div class="modal fade" id="user-add" tabindex="-1" aria-labelledby="user-addLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0">
@@ -117,12 +120,20 @@
                                    class="form-control" autocomplete="new-password" required>
                         </div>
 
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="is_admin" id="user-add-admin" value="1"
-                                   @checked($addOpened && old('is_admin'))>
-                            <label class="form-check-label" for="user-add-admin">
-                                Administrator <span class="text-muted small">(can manage users)</span>
-                            </label>
+                        <div class="mb-3">
+                            <span class="form-label fw-semibold d-block">Role</span>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="user-add-staff"
+                                       value="staff" @checked($addRole === 'staff') required>
+                                <label class="form-check-label" for="user-add-staff">Staff</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="user-add-admin"
+                                       value="admin" @checked($addRole === 'admin')>
+                                <label class="form-check-label" for="user-add-admin">Admin</label>
+                            </div>
+                            @if($addOpened) @error('role')<div class="text-danger small">{{ $message }}</div>@enderror @endif
+                            <div class="form-text">Staff can use inventory features. Admins can also manage users.</div>
                         </div>
                     </div>
 
@@ -140,6 +151,7 @@
             $isSelf     = $user->is(auth()->user());
             $editKey    = "user-edit-{$user->id}";
             $editOpened = old('modal_key') === $editKey;
+            $editRole   = (string) ($editOpened ? old('role', $user->is_admin ? 'admin' : 'staff') : ($user->is_admin ? 'admin' : 'staff'));
             $deleteKey  = "user-delete-{$user->id}";
             $viewKey    = "user-view-{$user->id}";
         @endphp
@@ -166,7 +178,7 @@
                                 @endif
                             </h5>
                             <span class="badge {{ $user->is_admin ? 'bg-primary' : 'bg-secondary' }}">
-                                {{ $user->is_admin ? 'Admin' : 'User' }}
+                                {{ $user->is_admin ? 'Admin' : 'Staff' }}
                             </span>
                         </div>
 
@@ -186,7 +198,7 @@
                                 </tr>
                                 <tr>
                                     <th class="text-muted fw-semibold">Role</th>
-                                    <td>{{ $user->is_admin ? 'Administrator (can manage users)' : 'Regular user' }}</td>
+                                    <td>{{ $user->is_admin ? 'Admin (can manage users)' : 'Staff (inventory access)' }}</td>
                                 </tr>
                                 <tr>
                                     <th class="text-muted fw-semibold">Email Verified</th>
@@ -256,15 +268,25 @@
                                        class="form-control" autocomplete="new-password">
                             </div>
 
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="is_admin" id="{{ $editKey }}-admin" value="1"
-                                       @checked($isSelf ? $user->is_admin : ($editOpened ? old('is_admin') : $user->is_admin))
-                                       @disabled($isSelf)>
-                                <label class="form-check-label" for="{{ $editKey }}-admin">
-                                    Administrator <span class="text-muted small">(can manage users)</span>
-                                </label>
+                            <div class="mb-3">
+                                <span class="form-label fw-semibold d-block">Role</span>
                                 @if ($isSelf)
-                                    <div class="form-text">You can't remove your own admin rights.</div>
+                                    <input type="hidden" name="role" value="{{ $editRole }}">
+                                @endif
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="role" id="{{ $editKey }}-staff"
+                                           value="staff" @checked($editRole === 'staff') @disabled($isSelf) @if(!$isSelf) required @endif>
+                                    <label class="form-check-label" for="{{ $editKey }}-staff">Staff</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="role" id="{{ $editKey }}-admin"
+                                           value="admin" @checked($editRole === 'admin') @disabled($isSelf)>
+                                    <label class="form-check-label" for="{{ $editKey }}-admin">Admin</label>
+                                </div>
+                                @if($editOpened) @error('role')<div class="text-danger small">{{ $message }}</div>@enderror @endif
+                                <div class="form-text">Staff can use inventory features. Admins can also manage users.</div>
+                                @if ($isSelf)
+                                    <div class="form-text">You can't change your own admin role.</div>
                                 @endif
                             </div>
                         </div>
@@ -278,23 +300,16 @@
             </div>
         </div>
 
-        {{-- ===== Delete User modal ===== --}}
-        <div class="modal fade" id="{{ $deleteKey }}" tabindex="-1" aria-labelledby="{{ $deleteKey }}Label" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title" id="{{ $deleteKey }}Label"><i class="bi bi-exclamation-triangle-fill me-1"></i> Delete User</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
+        {{-- ===== Delete User modal (never rendered for admin accounts) ===== --}}
+        @unless ($user->is_admin)
+            <div class="modal fade" id="{{ $deleteKey }}" tabindex="-1" aria-labelledby="{{ $deleteKey }}Label" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title" id="{{ $deleteKey }}Label"><i class="bi bi-exclamation-triangle-fill me-1"></i> Delete User</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
 
-                    @if ($isSelf)
-                        <div class="modal-body">
-                            <div class="alert alert-warning mb-0">You can't delete your own account while you are logged in.</div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    @else
                         <form method="POST" action="{{ route('users.destroy', $user) }}">
                             @csrf
                             @method('DELETE')
@@ -306,10 +321,10 @@
                                 <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i> Yes, delete</button>
                             </div>
                         </form>
-                    @endif
+                    </div>
                 </div>
             </div>
-        </div>
+        @endunless
     @endforeach
 @endsection
 

@@ -7,6 +7,19 @@ ledger, themed with the Lab 4 pink Bootstrap 5 palette.
 
 ---
 
+## Carried over from the latest Lab 5
+
+- **Registration + email verification** — public Register page is back; new accounts are regular users
+  and must confirm the emailed link (`verified` middleware). Existing accounts are marked verified by
+  migration `2026_11_17_000001_verify_existing_users`.
+- **User roles** — administrators can create and edit users using the Staff and Admin radio options; staff
+  use the inventory while admins can also manage accounts and privileged actions.
+- **Products have no delete** — a product shows *Active* while in stock and *Inactive* at quantity 0
+  (derived from quantity). Transaction history stays intact.
+- **Admin accounts can't be deleted**, and the Delete Account box is gone from Profile.
+- **Stricter routes** — IDs must be numeric, unknown product/brand/category/user URLs redirect to their list,
+  and any other unknown URL goes to the dashboard (or login).
+
 ## Part 1 — Environment setup
 
 | Item | Value |

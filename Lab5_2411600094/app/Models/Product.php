@@ -68,6 +68,25 @@ class Product extends Model
         };
     }
 
+    /**
+     * Active / Inactive follows the stock automatically:
+     * out of stock (quantity 0) = Inactive, restocked (quantity above 0) = Active again.
+     */
+    public function isActive(): bool
+    {
+        return $this->quantity > 0;
+    }
+
+    public function activeLabel(): string
+    {
+        return $this->isActive() ? 'Active' : 'Inactive';
+    }
+
+    public function activeBadgeClass(): string
+    {
+        return $this->isActive() ? 'bg-success' : 'bg-secondary';
+    }
+
     /** quantity x unit price — used for the inventory value stat. */
     public function stockValue(): float
     {

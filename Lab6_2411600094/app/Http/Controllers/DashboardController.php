@@ -38,10 +38,45 @@ class DashboardController extends Controller
         $brands     = Brand::withCount('products')->withSum('products', 'quantity')->orderBy('id')->get();
         $categories = Category::withCount('products')->withSum('products', 'quantity')->orderBy('id')->get();
 
+        // ---- Dashboard charts (Lab 5) ----
+        $inStockCount = max(0, $totalProducts - $lowStockCount - $outOfStockCount);
+        $statusChart = [
+            'labels' => ['In Stock', 'Low Stock', 'Out of Stock'],
+            'data'   => [$inStockCount, $lowStockCount, $outOfStockCount],
+        ];
+
+        $categoryCountChart = [
+            'labels' => $categories->pluck('name')->values(),
+            'data'   => $categories->pluck('products_count')->values(),
+        ];
+
+        $categoryValues = Category::with('products:id,category_id,quantity,unit_price')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($category) => [
+                'name'  => $category->name,
+                'value' => round($category->products->sum(fn ($product) => $product->quantity * (float) $product->unit_price), 2),
+            ])
+            ->filter(fn ($row) => $row['value'] > 0)
+            ->values();
+
+        $categoryValueChart = [
+            'labels' => $categoryValues->pluck('name'),
+            'data'   => $categoryValues->pluck('value'),
+        ];
+
+        $lowestProducts = Product::orderBy('quantity')->orderBy('id')->take(8)->get();
+        $stockLevelChart = [
+            'labels'   => $lowestProducts->pluck('name')->values(),
+            'quantity' => $lowestProducts->pluck('quantity')->values(),
+            'reorder'  => $lowestProducts->pluck('reorder_level')->values(),
+        ];
+
         return view('dashboard', compact(
             'totalProducts', 'lowStockCount', 'outOfStockCount', 'inventoryValue',
             'lowStockItems', 'outOfStockItems',
-            'recentProducts', 'recentMoves', 'brands', 'categories'
+            'recentProducts', 'recentMoves', 'brands', 'categories',
+            'statusChart', 'categoryCountChart', 'categoryValueChart', 'stockLevelChart'
         ));
     }
 

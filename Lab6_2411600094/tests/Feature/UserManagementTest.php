@@ -10,13 +10,18 @@ class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_public_registration_no_longer_exists(): void
+    public function test_public_registration_creates_a_non_admin_user(): void
     {
-        $this->get('/register')->assertNotFound();
         $this->post('/register', [
-            'name' => 'Test', 'email' => 'x@example.com',
+            'name' => 'Test',
+            'email' => 'x@example.com',
             'password' => 'password', 'password_confirmation' => 'password',
-        ])->assertNotFound();
+        ])->assertRedirect(route('verification.notice', absolute: false));
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'x@example.com',
+            'is_admin' => false,
+        ]);
     }
 
     public function test_guests_are_sent_to_login(): void
@@ -36,16 +41,46 @@ class UserManagementTest extends TestCase
     {
         $admin = User::factory()->create(['is_admin' => true]);
 
-        $this->actingAs($admin)->get('/users')->assertOk();
+        $response = $this->actingAs($admin)->get('/users')->assertOk()
+            ->assertSee('Staff')
+            ->assertSee('Admin')
+            ->assertSee('type="radio"', false);
+
+        $html = $response->getContent();
+        $this->assertSame(0, preg_match('/<input[^>]*id="user-add-staff"[^>]*checked/i', $html));
+        $this->assertSame(0, preg_match('/<input[^>]*id="user-add-admin"[^>]*checked/i', $html));
 
         $this->actingAs($admin)->post('/users', [
             'name'                  => 'New Staff',
             'email'                 => 'staff@example.com',
             'password'              => 'password123',
             'password_confirmation' => 'password123',
+            'role'                  => 'staff',
         ])->assertRedirect(route('users.index'));
 
         $this->assertDatabaseHas('users', ['email' => 'staff@example.com', 'is_admin' => false]);
+    }
+
+    public function test_admin_can_change_another_users_role(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $staff = User::factory()->create(['is_admin' => false]);
+
+        $this->actingAs($admin)->put(route('users.update', $staff), [
+            'name' => $staff->name,
+            'email' => $staff->email,
+            'role' => 'admin',
+        ])->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseHas('users', ['id' => $staff->id, 'is_admin' => true]);
+
+        $this->actingAs($admin)->put(route('users.update', $staff), [
+            'name' => $staff->name,
+            'email' => $staff->email,
+            'role' => 'staff',
+        ])->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseHas('users', ['id' => $staff->id, 'is_admin' => false]);
     }
 
     public function test_admin_cannot_delete_themselves(): void

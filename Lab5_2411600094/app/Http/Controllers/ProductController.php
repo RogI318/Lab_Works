@@ -66,16 +66,6 @@ class ProductController extends Controller
             ->with('success', "Product \"{$product->name}\" updated successfully.");
     }
 
-    public function destroy(Product $product)
-    {
-        $name = $product->name;
-        $product->delete();
-
-        return redirect()
-            ->route('products.index')
-            ->with('success', "Product \"{$name}\" deleted successfully.");
-    }
-
     /** Search + category / brand / stock-status filters. */
     private function filtered(Request $request)
     {

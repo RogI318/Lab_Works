@@ -22,13 +22,14 @@ class UserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'confirmed', Password::defaults()],
+            'role'     => ['required', Rule::in(['staff', 'admin'])],
         ]);
 
         $user = User::create([
             'name'              => $data['name'],
             'email'             => $data['email'],
             'password'          => $data['password'],   // hashed by the User model cast
-            'is_admin'          => $request->boolean('is_admin'),
+            'is_admin'          => $data['role'] === 'admin',
             'email_verified_at' => now(),
         ]);
 
@@ -43,6 +44,7 @@ class UserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
+            'role'     => ['required', Rule::in(['staff', 'admin'])],
         ]);
 
         $user->name  = $data['name'];
@@ -55,7 +57,7 @@ class UserController extends Controller
 
         // An admin cannot take away their own admin rights (prevents locking everyone out).
         if (! $user->is(auth()->user())) {
-            $user->is_admin = $request->boolean('is_admin');
+            $user->is_admin = $data['role'] === 'admin';
         }
 
         $user->save();
@@ -69,6 +71,11 @@ class UserController extends Controller
     {
         if ($user->is(auth()->user())) {
             return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        // Administrator accounts are protected: an admin cannot delete another admin.
+        if ($user->is_admin) {
+            return back()->with('error', 'Administrator accounts cannot be deleted.');
         }
 
         $name = $user->name;

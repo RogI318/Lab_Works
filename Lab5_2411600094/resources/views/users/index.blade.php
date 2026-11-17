@@ -54,8 +54,8 @@
                                             data-bs-toggle="modal" data-bs-target="#user-edit-{{ $user->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    {{-- An admin can only view and edit their own account; no delete button on their own row. --}}
-                                    @unless ($user->is(auth()->user()))
+                                    {{-- Admin accounts (including your own) can't be deleted: no delete button on admin rows. --}}
+                                    @unless ($user->is_admin)
                                         <button type="button" class="btn btn-sm btn-danger" title="Delete"
                                                 data-bs-toggle="modal" data-bs-target="#user-delete-{{ $user->id }}">
                                             <i class="bi bi-trash"></i>
@@ -278,8 +278,8 @@
             </div>
         </div>
 
-        {{-- ===== Delete User modal (never rendered for the logged-in admin's own row) ===== --}}
-        @unless ($isSelf)
+        {{-- ===== Delete User modal (never rendered for admin accounts) ===== --}}
+        @unless ($user->is_admin)
             <div class="modal fade" id="{{ $deleteKey }}" tabindex="-1" aria-labelledby="{{ $deleteKey }}Label" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content border-0">

@@ -13,12 +13,10 @@
             <a href="{{ route('products.edit', $product) }}" class="btn btn-warning">
                 <i class="bi bi-pencil me-1"></i> Edit
             </a>
-            <form action="{{ route('products.destroy', $product) }}" method="POST"
-                  onsubmit="return confirm('Delete {{ $product->name }}?');">
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-danger"><i class="bi bi-trash me-1"></i> Delete</button>
-            </form>
+            <span class="badge {{ $product->activeBadgeClass() }} fs-6 align-self-center"
+                  title="{{ $product->isActive() ? 'In the catalog and available' : 'Out of stock: becomes Active again when restocked' }}">
+                {{ $product->activeLabel() }}
+            </span>
         </div>
     </div>
 

@@ -71,6 +71,11 @@ class UserController extends Controller
             return back()->with('error', 'You cannot delete your own account.');
         }
 
+        // Administrator accounts are protected: an admin cannot delete another admin.
+        if ($user->is_admin) {
+            return back()->with('error', 'Administrator accounts cannot be deleted.');
+        }
+
         $name = $user->name;
         $user->delete();
 

@@ -52,6 +52,58 @@
         </div>
     </div>
 
+    {{-- ===== Lab 5 dashboard charts ===== --}}
+    <div class="row mb-2">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-hover h-100">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart me-1"></i>Stock Status</h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 280px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-hover h-100">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-1"></i>Products per Category</h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 280px;">
+                        <canvas id="categoryCountChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-hover h-100">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-cash-stack me-1"></i>Inventory Value by Category</h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 280px;">
+                        <canvas id="categoryValueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-hover h-100">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-down me-1"></i>Lowest Stock vs Reorder Level</h5>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 280px;">
+                        <canvas id="stockLevelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         {{-- ===== Alert center ===== --}}
         <div class="col-12 mb-4">
@@ -191,7 +243,8 @@
             else if (h >= 12 && h < 17) tod = 'Good Afternoon';
             else if (h >= 17 && h < 21) tod = 'Good Evening';
             else                        tod = 'Good Night';
-            document.getElementById('greeting').textContent = `${tod}, ` + @json(Auth::user()->name) + '!';
+            const greetingName = @json(preg_replace('/^RogieMart\s+/i', '', Auth::user()->name));
+            document.getElementById('greeting').textContent = `${tod}, ${greetingName}!`;
         })();
     </script>
 
@@ -207,4 +260,112 @@
         };
     </script>
     <script src="{{ asset('js/dashboard-realtime.js') }}"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const statusData = @json($statusChart);
+        const categoryCountData = @json($categoryCountChart);
+        const categoryValueData = @json($categoryValueChart);
+        const stockLevelData = @json($stockLevelChart);
+
+        const themePrimary = '#FB6F92';
+        const palette = ['#FB6F92', '#FF8FAB', '#FFB3C6', '#FFC2D1', '#e5527a', '#c9184a', '#ff758f', '#ffccd5'];
+
+        Chart.defaults.color = '#5a3d4a';
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: statusData.labels,
+                datasets: [{
+                    data: statusData.data,
+                    backgroundColor: ['#28a745', '#f3a712', '#dc3545'],
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: { legend: { position: 'bottom' } },
+            },
+        });
+
+        new Chart(document.getElementById('categoryCountChart'), {
+            type: 'bar',
+            data: {
+                labels: categoryCountData.labels,
+                datasets: [{
+                    label: 'Products',
+                    data: categoryCountData.data,
+                    backgroundColor: themePrimary,
+                    borderRadius: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            },
+        });
+
+        new Chart(document.getElementById('categoryValueChart'), {
+            type: 'doughnut',
+            data: {
+                labels: categoryValueData.labels,
+                datasets: [{
+                    data: categoryValueData.data,
+                    backgroundColor: palette,
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => ' ' + context.label + ': ' +
+                                Number(context.parsed).toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                }),
+                        },
+                    },
+                },
+            },
+        });
+
+        new Chart(document.getElementById('stockLevelChart'), {
+            type: 'bar',
+            data: {
+                labels: stockLevelData.labels,
+                datasets: [
+                    {
+                        label: 'Quantity on hand',
+                        data: stockLevelData.quantity,
+                        backgroundColor: themePrimary,
+                        borderRadius: 6,
+                    },
+                    {
+                        label: 'Reorder level',
+                        data: stockLevelData.reorder,
+                        backgroundColor: '#FFC2D1',
+                        borderRadius: 6,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            },
+        });
+    </script>
 @endpush

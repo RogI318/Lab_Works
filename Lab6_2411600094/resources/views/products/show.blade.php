@@ -13,12 +13,10 @@
             <a href="{{ route('products.edit', $product) }}" class="btn btn-warning">
                 <i class="bi bi-pencil me-1"></i> Edit
             </a>
-            <form action="{{ route('products.destroy', $product) }}" method="POST"
-                  onsubmit="return confirm('Delete {{ $product->name }}? Its stock movements will also be removed.');">
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-danger"><i class="bi bi-trash me-1"></i> Delete</button>
-            </form>
+            <span class="badge {{ $product->activeBadgeClass() }} fs-6 align-self-center"
+                  title="{{ $product->isActive() ? 'In the catalog and available' : 'Out of stock: becomes Active again when restocked' }}">
+                {{ $product->activeLabel() }}
+            </span>
         </div>
     </div>
 
@@ -88,7 +86,7 @@
             @else
                 <div class="alert alert-success shadow-hover">
                     <h5 class="alert-heading"><i class="bi bi-check-circle-fill me-1"></i>Healthy stock level</h5>
-                    <p class="mb-0">{{ number_format($product->quantity - $product->reorder_level) }} unit(s) above the reorder point.</p>
+                    <p class="mb-0">{{ number_format($product->quantity - $product->reorder_level) }} unit(s) above the low stock level.</p>
                 </div>
             @endif
 
