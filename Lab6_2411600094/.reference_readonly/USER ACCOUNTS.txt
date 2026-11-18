@@ -1,0 +1,5 @@
+Login after running: php artisan migrate:fresh --seed
+
+Email: test@example.com
+Password: password
+Role: admin

@@ -1,5 +1,5 @@
 /*
- * Lab 6 Part 7 Step 3 — AJAX polling for the dashboard (30s).
+ * AJAX polling for the dashboard (30s).
  * Module pattern: one object owns the interval, fetches the three API
  * endpoints, animates changed numbers, rebuilds the alert + movement
  * lists, and reports staleness without ever breaking the page.
@@ -13,15 +13,15 @@
     const INTERVAL_MS = cfg.intervalMs || 30000;
 
     const els = {
-        products:  document.getElementById('statProducts'),
-        low:       document.getElementById('statLowStock'),
-        out:       document.getElementById('statOutOfStock'),
-        value:     document.getElementById('statValue'),
-        alerts:    document.getElementById('alertsList'),
-        moves:     document.getElementById('recentMovesBody'),
-        updated:   document.getElementById('lastUpdated'),
-        status:    document.getElementById('liveStatus'),
-        badge:     document.getElementById('notifBadge'),
+        products: document.getElementById('statProducts'),
+        low: document.getElementById('statLowStock'),
+        out: document.getElementById('statOutOfStock'),
+        value: document.getElementById('statValue'),
+        alerts: document.getElementById('alertsList'),
+        moves: document.getElementById('recentMovesBody'),
+        updated: document.getElementById('lastUpdated'),
+        status: document.getElementById('liveStatus'),
+        badge: document.getElementById('notifBadge'),
     };
 
     function setStatus(text, className) {

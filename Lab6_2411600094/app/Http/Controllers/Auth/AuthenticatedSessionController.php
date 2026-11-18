@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Models\AuditLog;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -25,6 +26,7 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
+        AuditLog::record('login');
 
         $request->session()->regenerate();
 
@@ -36,6 +38,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        AuditLog::record('logout');
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\AccountChangeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryTransactionController;
+use App\Http\Controllers\InventoryOrderController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -18,16 +21,40 @@ Route::pattern('product', '[0-9]+');
 Route::pattern('brand', '[0-9]+');
 Route::pattern('category', '[0-9]+');
 Route::pattern('user', '[0-9]+');
+Route::pattern('transaction', '[0-9]+');
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
+
+Route::get('/account/confirm/{user}/{token}', [AccountChangeController::class, 'confirm'])
+    ->middleware('signed')->name('account.confirm-changes');
 
 // 'verified': a new account must confirm its email (link sent after registering) before using the system.
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // Dashboard — real inventory statistics from MySQL
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('purchase-orders', [InventoryOrderController::class, 'index'])->defaults('direction', 'purchase')->name('purchase-orders.index');
+    Route::get('sales-orders', [InventoryOrderController::class, 'index'])->defaults('direction', 'sale')->name('sales-orders.index');
+    Route::get('purchase-orders/latest', [InventoryOrderController::class, 'latest'])->defaults('direction', 'purchase')->name('purchase-orders.latest');
+    Route::get('sales-orders/latest', [InventoryOrderController::class, 'latest'])->defaults('direction', 'sale')->name('sales-orders.latest');
+    Route::get('orders/create', [InventoryOrderController::class, 'create'])->name('orders.create');
+    Route::post('orders', [InventoryOrderController::class, 'store'])->name('orders.store');
+    Route::post('orders/{order}/approve', [InventoryOrderController::class, 'approve'])->whereNumber('order')->name('orders.approve')->middleware('can:manage-users');
+    Route::get('orders/{order}', [InventoryOrderController::class, 'show'])->whereNumber('order')->name('orders.show');
+    Route::get('orders/{order}/status', [InventoryOrderController::class, 'status'])->whereNumber('order')->name('orders.status');
+    Route::post('orders/{order}/complete', [InventoryOrderController::class, 'complete'])->whereNumber('order')->name('orders.complete');
+    Route::post('orders/{order}/cancel', [InventoryOrderController::class, 'cancel'])->whereNumber('order')->name('orders.cancel');
+
+    Route::get('products/trash', [ProductController::class, 'trash'])->name('products.trash');
+    Route::post('products/{id}/restore', [ProductController::class, 'restore'])->whereNumber('id')->name('products.restore');
+    Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
+    Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy')->missing(fn() => redirect()->route('products.index'));
+    Route::get('notifications/latest', [NotificationController::class, 'latest'])->name('notifications.latest');
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('can:manage-users')->name('audit-logs.index');
+    Route::get('audit-logs/latest', [AuditLogController::class, 'latest'])->middleware('can:manage-users')->name('audit-logs.latest');
 
     // ->missing(...): a number that does not exist (like /products/999)
     // goes back to the list instead of showing an error page.
@@ -36,7 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Active again when it is restocked (worked out from its quantity).
     Route::resource('products', ProductController::class)
         ->except(['destroy'])
-        ->missing(fn () => redirect()->route('products.index'));
+        ->missing(fn() => redirect()->route('products.index'));
 
     // Lab 6 Part 3: inventory transaction ledger (no edit/update —
     // movements are corrected by deleting and re-recording, admin only).
@@ -60,11 +87,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Brands and Categories: CRUD runs through modals, so only index/store/update/destroy.
     Route::resource('brands', BrandController::class)
         ->except(['create', 'edit', 'show'])
-        ->missing(fn () => redirect()->route('brands.index'));
+        ->missing(fn() => redirect()->route('brands.index'));
 
     Route::resource('categories', CategoryController::class)
         ->except(['create', 'edit', 'show'])
-        ->missing(fn () => redirect()->route('categories.index'));
+        ->missing(fn() => redirect()->route('categories.index'));
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -74,18 +101,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('admin')->group(function () {
         Route::resource('users', UserController::class)
             ->except(['create', 'edit', 'show'])
-            ->missing(fn () => redirect()->route('users.index'));
+            ->missing(fn() => redirect()->route('users.index'));
 
         // Anything that is not a real users page (/users/*, /users/abc) goes back to the list.
-        Route::get('users/{any}', fn () => redirect()->route('users.index'))->where('any', '.*');
+        Route::get('users/{any}', fn() => redirect()->route('users.index'))->where('any', '.*');
     });
 
     // Catch-all for each section. It must stay AFTER the resources above.
     // Anything that is not a real page, like /products/* or /brands/abc,
     // goes back to that section's list and changes nothing.
-    foreach (['products', 'brands', 'categories'] as $section) {
-        Route::get($section . '/{any}', fn () => redirect()->route($section . '.index'))
+    foreach (['products', 'brands', 'categories', 'transactions'] as $section) {
+        Route::get($section . '/{any}', fn() => redirect()->route($section . '.index'))
             ->where('any', '.*');
+    }
+
+    // Unknown nested pages return to their own section, not a framework 404.
+    foreach ([
+        'reports' => 'reports.index',
+        'purchase-orders' => 'purchase-orders.index',
+        'sales-orders' => 'sales-orders.index',
+        'adjustments' => 'transactions.index',
+        'audit-logs' => 'audit-logs.index',
+    ] as $section => $destination) {
+        Route::get($section . '/{any}', fn() => redirect()->route($destination))->where('any', '.*');
     }
 
     // Profile (Breeze)
@@ -95,7 +133,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Login, logout, password reset... (Breeze). Do not remove this line.
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
 // Any other URL that does not exist (/dashboard/*, /public, /vendor, ...)
 // goes to the dashboard if logged in, or to login if not.

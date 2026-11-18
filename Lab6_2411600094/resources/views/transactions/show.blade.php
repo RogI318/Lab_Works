@@ -30,6 +30,9 @@
                             {{ $transaction->signedQuantity() >= 0 ? '+' : '' }}{{ $transaction->signedQuantity() }} unit(s)
                         </dd>
 
+                        <dt>Stock before → after</dt>
+                        <dd>{{ $transaction->quantity_before ?? '—' }} → {{ $transaction->quantity_after ?? '—' }} units</dd>
+
                         @if ($transaction->isAdjustment())
                             <dt>Reason</dt>
                             <dd>{{ $transaction->reasonLabel() }}</dd>

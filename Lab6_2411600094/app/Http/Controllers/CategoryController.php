@@ -21,6 +21,7 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         $category = Category::create($request->validate($this->rules(), $this->messages()));
 
         // Submitted from the "+" button beside the Category dropdown on a product form.
@@ -39,6 +40,7 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         $category->update($request->validate($this->rules($category->id), $this->messages()));
 
         return redirect()
@@ -48,6 +50,7 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        abort_unless(auth()->user()->canManageStock(), 403);
         if ($count = $category->products()->count()) {
             return back()->with(
                 'error',

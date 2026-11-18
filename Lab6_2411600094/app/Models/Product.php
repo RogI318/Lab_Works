@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Observers\ProductObserver;
+use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,9 +14,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
+#[ObservedBy(ProductObserver::class)]
 class Product extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, Auditable;
 
     public const STATUS_IN_STOCK  = 'In Stock';
     public const STATUS_LOW_STOCK = 'Low Stock';
@@ -21,13 +25,14 @@ class Product extends Model
 
     protected $fillable = [
         'name', 'sku', 'description', 'category_id', 'brand_id',
-        'quantity', 'reorder_level', 'unit_price', 'supplier',
+        'quantity', 'reorder_level', 'unit_price', 'supplier', 'is_active',
     ];
 
     protected $casts = [
         'quantity'      => 'integer',
         'reorder_level' => 'integer',
         'unit_price'    => 'decimal:2',
+        'is_active'     => 'boolean',
     ];
 
     /* ---------- Relationships ---------- */
@@ -108,7 +113,7 @@ class Product extends Model
      */
     public function isActive(): bool
     {
-        return $this->quantity > 0;
+        return (bool) $this->is_active;
     }
 
     public function activeLabel(): string

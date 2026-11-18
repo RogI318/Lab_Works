@@ -1,0 +1,10 @@
+test@example.com
+password
+
+
+Run these inside the project folder (this wipes your database):
+
+composer dump-autoload
+php artisan optimize:clear
+php artisan migrate:fresh --seed
+php artisan serve

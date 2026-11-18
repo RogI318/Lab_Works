@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Route;
  */
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/dashboard/stats', [DashboardApiController::class, 'stats']);
+    Route::get('/dashboard/charts', [DashboardApiController::class, 'charts']);
     Route::get('/products/low-stock', [DashboardApiController::class, 'lowStock']);
     Route::get('/transactions/recent', [DashboardApiController::class, 'recent']);
+    Route::get('/products/{product}/current-stock', [DashboardApiController::class, 'currentStock'])
+        ->whereNumber('product');
 });

@@ -109,12 +109,13 @@
     </div>
 
     <div class="col-md-4">
-        <label for="unit_price" class="form-label fw-semibold">Unit Price (PHP) <span class="text-danger">*</span></label>
+        <label for="unit_price" class="form-label fw-semibold">Selling Unit Price (PHP) <span class="text-danger">*</span></label>
         <input type="number" name="unit_price" id="unit_price" min="0" step="0.01"
                class="form-control @if($productErrors) @error('unit_price') is-invalid @enderror @endif"
                value="{{ old('unit_price') !== null && $productErrors ? old('unit_price') : (isset($product) ? number_format((float) $product->unit_price, 2, '.', '') : '0.00') }}">
         @if($productErrors)@error('unit_price')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
     </div>
+
 
     <div class="col-12">
         <label for="description" class="form-label fw-semibold">Description</label>

@@ -41,26 +41,27 @@ class InventoryTransactionController extends Controller
     }
 
     /** Step 2 — create form: pass products and the transaction types. */
-    public function create()
+    public function create(Request $request)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         return view('transactions.create', [
             // stock_status / stock_status_color are appended so the JavaScript
             // stock hint on the form can read them straight from the page.
             'products' => Product::orderBy('name')
                 ->get(['id', 'name', 'sku', 'quantity', 'reorder_level'])
                 ->append('stock_status', 'stock_status_color'),
-            // Manual ledger entries are in/out only; 'adjustment' rows come
-            // from the dedicated Part 8 stock-adjustment feature.
-            'types'    => [
-                InventoryTransaction::TYPE_IN  => 'Stock In',
-                InventoryTransaction::TYPE_OUT => 'Stock Out',
-            ],
+            // Manual ledger entries: in/out plus Return and Damage; 'adjustment'
+            // rows come from the dedicated Part 8 stock-adjustment feature.
+            'types'    => $this->typeOptions(),
+            // "+ Transaction" on a product page opens this form with it preselected.
+            'selectedProductId' => $request->integer('product_id') ?: null,
         ]);
     }
 
     /** Step 2 + Step 3 — validate, then let the observer move the stock. */
     public function store(Request $request)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         $validated = $this->makeValidator($request)->validate();
 
         $product = Product::findOrFail($validated['product_id']);
@@ -132,10 +133,10 @@ class InventoryTransactionController extends Controller
             'notes'            => ['nullable', 'string', 'max:1000'],
         ], [
             'product_id.exists' => 'The selected product no longer exists.',
-            'type.in'           => 'Choose either Stock In or Stock Out.',
+            'type.in'           => 'Choose Stock In, Stock Out, Return or Damage.',
             'quantity.min'      => 'Quantity must be at least 1.',
         ])->after(function ($validator) use ($request) {
-            if ($request->input('type') !== InventoryTransaction::TYPE_OUT) {
+            if (! in_array($request->input('type'), [InventoryTransaction::TYPE_OUT, InventoryTransaction::TYPE_DAMAGE], true)) {
                 return;
             }
 
@@ -155,8 +156,10 @@ class InventoryTransactionController extends Controller
     private function typeOptions(): array
     {
         return [
-            InventoryTransaction::TYPE_IN  => 'Stock In',
-            InventoryTransaction::TYPE_OUT => 'Stock Out',
+            InventoryTransaction::TYPE_IN     => 'Stock In',
+            InventoryTransaction::TYPE_OUT    => 'Stock Out',
+            InventoryTransaction::TYPE_RETURN => 'Return',
+            InventoryTransaction::TYPE_DAMAGE => 'Damage',
         ];
     }
 }

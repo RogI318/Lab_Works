@@ -12,28 +12,62 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
+    public function trash()
+    {
+        abort_unless(auth()->user()->canManageStock(), 403);
+        return view('products.trash', ['products' => Product::onlyTrashed()->with(['brand', 'category'])->latest('deleted_at')->paginate(15)]);
+    }
+
+    public function restore(int $id)
+    {
+        abort_unless(auth()->user()->canManageStock(), 403);
+        $product = Product::onlyTrashed()->findOrFail($id);
+        $product->restore();
+        $product->update(['is_active' => false]);
+        return redirect()->route('products.trash')->with('success', 'Product restored as Inactive.');
+    }
+
+    public function deactivate(Product $product)
+    {
+        abort_unless(auth()->user()->canManageStock(), 403);
+        $product->update(['is_active' => !$product->is_active]);
+        return back()->with('success', 'Product availability updated.');
+    }
+
+    public function destroy(Product $product)
+    {
+        abort_unless(auth()->user()->canManageStock(), 403);
+        if ($product->is_active)
+            return back()->with('error', 'Deactivate this product before moving it to Trash.');
+        $name = $product->name;
+        $product->delete();
+        return redirect()->route('products.index')->with('success', "{$name} was moved to Product Trash.");
+    }
+
     public function index(Request $request)
     {
         $products = $this->filtered($request)
-                         ->with('category', 'brand')
-                         ->orderBy('name')
-                         ->paginate(10)
-                         ->withQueryString();
+            ->with('category', 'brand')
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('products.index', [
-            'products'   => $products,
+            'products' => $products,
             'categories' => Category::orderBy('name')->get(),
-            'brands'     => Brand::orderBy('name')->get(),
+            'brands' => Brand::orderBy('name')->get(),
         ]);
     }
 
     public function create()
     {
+        abort_unless(auth()->user()->canManageStock(), 403);
         return view('products.create', $this->formOptions());
     }
 
     public function store(Request $request)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         $this->normalizeSku($request);
         $validated = $request->validate($this->rules(), $this->messages());
 
@@ -72,19 +106,21 @@ class ProductController extends Controller
             : $transactions->first()->balance_after - $transactions->first()->signedQuantity();
 
         return view('products.show', [
-            'product'      => $product,
+            'product' => $product,
             'transactions' => $transactions,
-            'opening'      => $opening,
+            'opening' => $opening,
         ]);
     }
 
     public function edit(Product $product)
     {
+        abort_unless(auth()->user()->canManageStock(), 403);
         return view('products.edit', ['product' => $product] + $this->formOptions());
     }
 
     public function update(Request $request, Product $product)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         $this->normalizeSku($request);
         $validated = $request->validate($this->rules($product->id), $this->messages());
 
@@ -121,9 +157,9 @@ class ProductController extends Controller
         $query = Product::query();
 
         if ($search = $request->input('search')) {
-            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")
-                                       ->orWhere('sku', 'like', "%{$search}%")
-                                       ->orWhere('supplier', 'like', "%{$search}%"));
+            $query->where(fn($q) => $q->where('name', 'like', "%{$search}%")
+                ->orWhere('sku', 'like', "%{$search}%")
+                ->orWhere('supplier', 'like', "%{$search}%"));
         }
 
         if ($categoryId = $request->input('category_id')) {
@@ -137,8 +173,8 @@ class ProductController extends Controller
         match ($request->input('status')) {
             Product::STATUS_LOW_STOCK => $query->lowStock(),
             Product::STATUS_OUT_STOCK => $query->outOfStock(),
-            Product::STATUS_IN_STOCK  => $query->whereColumn('quantity', '>', 'reorder_level'),
-            default                   => null,
+            Product::STATUS_IN_STOCK => $query->whereColumn('quantity', '>', 'reorder_level'),
+            default => null,
         };
 
         return $query;
@@ -149,10 +185,10 @@ class ProductController extends Controller
     {
         InventoryTransaction::create([
             'product_id' => $product->id,
-            'type'       => $type,
-            'quantity'   => $quantity,
+            'type' => $type,
+            'quantity' => $quantity,
             'reference_number' => $reference,
-            'user_id'    => auth()->id(),
+            'user_id' => auth()->id(),
         ]);
     }
 
@@ -168,45 +204,45 @@ class ProductController extends Controller
     {
         return [
             'categories' => Category::orderBy('name')->get(),
-            'brands'     => Brand::orderBy('name')->get(),
+            'brands' => Brand::orderBy('name')->get(),
         ];
     }
 
     private function rules($ignoreId = null): array
     {
         return [
-            'name'          => 'required|string|max:255',
-            'sku'           => ['required', 'string', 'max:50', Rule::unique('products', 'sku')->ignore($ignoreId)],
-            'description'   => 'nullable|string|max:2000',
-            'category_id'   => 'required|integer|exists:categories,id',
-            'brand_id'      => 'required|integer|exists:brands,id',
-            'quantity'      => 'required|integer|min:0|max:1000000',
+            'name' => 'required|string|max:255',
+            'sku' => ['required', 'string', 'max:50', Rule::unique('products', 'sku')->ignore($ignoreId)],
+            'description' => 'nullable|string|max:2000',
+            'category_id' => 'required|integer|exists:categories,id',
+            'brand_id' => 'required|integer|exists:brands,id',
+            'quantity' => 'required|integer|min:0|max:1000000',
             'reorder_level' => 'required|integer|min:0|max:1000000',
-            'unit_price'    => 'required|numeric|min:0|max:99999999.99',
-            'supplier'      => 'nullable|string|max:255',
+            'unit_price' => 'required|numeric|min:0|max:99999999.99',
+            'supplier' => 'nullable|string|max:255',
         ];
     }
 
     private function messages(): array
     {
         return [
-            'name.required'          => 'Please provide the product name.',
-            'sku.required'           => 'Please provide a SKU (e.g., LMB-COC-1001).',
-            'sku.unique'             => 'That SKU is already used by another product.',
-            'category_id.required'   => 'Please select a category for this product.',
-            'category_id.exists'     => 'The selected category no longer exists.',
-            'brand_id.required'      => 'Please select the brand of this product.',
-            'brand_id.exists'        => 'The selected brand no longer exists.',
-            'quantity.required'      => 'Please enter the quantity currently in stock.',
-            'quantity.integer'       => 'Quantity must be a whole number.',
-            'quantity.min'           => 'Quantity cannot be negative.',
+            'name.required' => 'Please provide the product name.',
+            'sku.required' => 'Please provide a SKU (e.g., LMB-COC-1001).',
+            'sku.unique' => 'That SKU is already used by another product.',
+            'category_id.required' => 'Please select a category for this product.',
+            'category_id.exists' => 'The selected category no longer exists.',
+            'brand_id.required' => 'Please select the brand of this product.',
+            'brand_id.exists' => 'The selected brand no longer exists.',
+            'quantity.required' => 'Please enter the quantity currently in stock.',
+            'quantity.integer' => 'Quantity must be a whole number.',
+            'quantity.min' => 'Quantity cannot be negative.',
             'reorder_level.required' => 'Please set a reorder level for low-stock alerts.',
-            'reorder_level.integer'  => 'Reorder level must be a whole number.',
-            'reorder_level.min'      => 'Reorder level cannot be negative.',
-            'reorder_level.max'      => 'Reorder level is too large.',
-            'unit_price.required'    => 'Please enter the unit price.',
-            'unit_price.numeric'     => 'Unit price must be a number, e.g. 89.50.',
-            'unit_price.min'         => 'Unit price cannot be negative.',
+            'reorder_level.integer' => 'Reorder level must be a whole number.',
+            'reorder_level.min' => 'Reorder level cannot be negative.',
+            'reorder_level.max' => 'Reorder level is too large.',
+            'unit_price.required' => 'Please enter the unit price.',
+            'unit_price.numeric' => 'Unit price must be a number, e.g. 89.50.',
+            'unit_price.min' => 'Unit price cannot be negative.',
         ];
     }
 }

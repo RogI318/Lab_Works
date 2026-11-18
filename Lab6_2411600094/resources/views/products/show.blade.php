@@ -134,6 +134,9 @@
                 @if (request('date_from') || request('date_to'))
                     <a href="{{ route('products.show', $product) }}" class="btn btn-sm btn-outline-light text-nowrap">Reset</a>
                 @endif
+                <a href="{{ route('transactions.create', ['product_id' => $product->id]) }}" class="btn btn-sm btn-outline-light text-nowrap">
+                    <i class="bi bi-plus-lg me-1"></i> Transaction
+                </a>
             </form>
         </div>
         <div class="card-body">
@@ -144,7 +147,7 @@
                             <th>Date</th>
                             <th>Type</th>
                             <th class="text-end">Quantity</th>
-                            <th class="text-end">Balance after</th>
+                            <th>Before → After</th>
                             <th class="ps-4">Reference</th>
                             <th>Handled by</th>
                         </tr>
@@ -167,7 +170,7 @@
                                 <td class="text-end fw-bold {{ $transaction->signedQuantity() >= 0 ? 'text-success' : 'text-danger' }}">
                                     {{ $transaction->signedQuantity() > 0 ? '+' : '' }}{{ number_format($transaction->signedQuantity()) }}
                                 </td>
-                                <td class="text-end fw-semibold">{{ number_format($transaction->balance_after) }}</td>
+                                <td class="text-nowrap">{{ $transaction->quantity_before ?? ($transaction->balance_after - $transaction->signedQuantity()) }} → {{ $transaction->quantity_after ?? $transaction->balance_after }}</td>
                                 <td class="ps-4 text-nowrap"><code>{{ $transaction->reference_number ?: 'n/a' }}</code></td>
                                 <td>{{ $transaction->user->name ?? 'System' }}</td>
                             </tr>

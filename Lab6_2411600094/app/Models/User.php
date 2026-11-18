@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Concerns\Auditable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Auditable;
 
     /**
      * The attributes that are mass assignable.
@@ -24,11 +25,13 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'is_admin',
+        'role',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'pending_password',
     ];
 
     /**
@@ -43,12 +46,35 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             // Lab 6: minimal role flag (migration 2026_11_11_001959)
             'is_admin' => 'boolean',
+            'pending_changes_at' => 'datetime',
         ];
     }
 
     /** Users who may delete transactions and receive low-stock alerts. */
     public function scopeAdmins(Builder $query): Builder
     {
-        return $query->where('is_admin', true);
+        return $query->where(function ($q) {
+            $q->where('role', 'admin')->orWhere('is_admin', true); });
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin' || (bool) $this->is_admin;
+    }
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff' && !$this->isAdmin();
+    }
+    public function canManageStock(): bool
+    {
+        return $this->isAdmin() || $this->isStaff();
+    }
+    public function hasPendingChanges(): bool
+    {
+        return $this->pending_email !== null || $this->pending_password !== null;
+    }
+    public function pendingChangesToken(): string
+    {
+        return hash_hmac('sha256', $this->pending_email . '|' . $this->pending_password, config('app.key'));
     }
 }

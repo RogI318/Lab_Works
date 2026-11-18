@@ -4,13 +4,13 @@
 
 @section('content')
 
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-        <h2 class="fw-bold">Inventory Transactions</h2>
-        <div class="btn-toolbar gap-2">
+    <div class="d-flex flex-wrap align-items-center gap-3 pb-2 mb-3 border-bottom">
+        <h2 class="fw-bold mb-0 me-auto">Inventory Transactions</h2>
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 ms-auto">
             <a href="{{ route('transactions.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-1"></i> New Transaction
             </a>
-            @if (Auth::user()->is_admin)
+            @if (Auth::user()->canManageStock())
                 {{-- Part 8: the cycle-count form opens right here, no separate page. --}}
                 <button type="button" class="btn btn-outline-primary"
                         data-bs-toggle="modal" data-bs-target="#adjustment-add">
@@ -45,6 +45,8 @@
                         <option value="">All Types</option>
                         <option value="in" @selected(request('type') === 'in')>Stock In</option>
                         <option value="out" @selected(request('type') === 'out')>Stock Out</option>
+                        <option value="return" @selected(request('type') === 'return')>Return</option>
+                        <option value="damage" @selected(request('type') === 'damage')>Damage</option>
                         <option value="adjustment" @selected(request('type') === 'adjustment')>Adjustment</option>
                     </select>
                 </div>
@@ -80,6 +82,7 @@
                             <th>Product</th>
                             <th>Type</th>
                             <th class="text-end">Quantity</th>
+                            <th>Before → After</th>
                             <th class="ps-4">Reference Number</th>
                             <th>User</th>
                             <th class="text-center">Actions</th>
@@ -105,6 +108,7 @@
                                 <td class="text-end fw-bold {{ $transaction->signedQuantity() >= 0 ? 'text-success' : 'text-danger' }}">
                                     {{ $transaction->signedQuantity() >= 0 ? '+' : '' }}{{ $transaction->signedQuantity() }}
                                 </td>
+                                <td class="text-nowrap">{{ $transaction->quantity_before ?? '—' }} → {{ $transaction->quantity_after ?? '—' }}</td>
                                 <td class="ps-4 text-nowrap"><code>{{ $transaction->reference_number ?: 'n/a' }}</code></td>
                                 <td>{{ $transaction->user?->name ?? 'system' }}</td>
                                 <td class="text-center text-nowrap">
@@ -137,7 +141,7 @@
         </div>
     </div>
 
-    @if (Auth::user()->is_admin)
+    @if (Auth::user()->canManageStock())
         @include('partials.adjustment-modal')
     @endif
 

@@ -9,6 +9,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\AuditLog;
 
 /**
  * Lab 5 built the Inventory Valuation report; Lab 6 Part 9 Step 2 adds the
@@ -20,17 +21,17 @@ class ReportController extends Controller
 
     public function index(Request $request)
     {
-        $range   = $this->range($request);
+        $range = $this->range($request);
         $filters = $this->filters($request);
 
         return view('reports.index', [
-            'report'         => in_array($request->report, self::TYPES) ? $request->report : 'valuation',
-            'range'          => $range,
-            'filters'        => $filters,
-            'movement'       => $this->movementRows($range[0], $range[1], $filters),
+            'report' => in_array($request->report, self::TYPES) ? $request->report : 'valuation',
+            'range' => $range,
+            'filters' => $filters,
+            'movement' => $this->movementRows($range[0], $range[1], $filters),
             'lowStockReport' => $this->lowStockReport($filters),
             // dropdown data for the Lab 5 style filter panels
-            'filterProducts'   => Product::orderBy('name')->get(['id', 'name', 'sku']),
+            'filterProducts' => Product::orderBy('name')->get(['id', 'name', 'sku']),
             'filterCategories' => Category::orderBy('name')->get(['id', 'name']),
         ] + $this->reportData());
     }
@@ -38,10 +39,11 @@ class ReportController extends Controller
     /** Part 9 Step 2: one export endpoint, three report shapes. */
     public function export(Request $request): StreamedResponse
     {
+        AuditLog::record('exported', null, null, null, 'Inventory report CSV');
         return match (in_array($request->report, self::TYPES) ? $request->report : 'valuation') {
-            'movement'  => $this->exportMovement($this->range($request), $this->filters($request)),
+            'movement' => $this->exportMovement($this->range($request), $this->filters($request)),
             'low-stock' => $this->exportLowStock($this->filters($request)),
-            default     => $this->exportValuation(),
+            default => $this->exportValuation(),
         };
     }
 
@@ -54,7 +56,7 @@ class ReportController extends Controller
         return $this->csv(
             "stock_movement_{$from}_to_{$to}.csv",
             ['Date', 'Time', 'SKU', 'Product', 'Type', 'Reason', 'Qty change', 'Balance after', 'Reference', 'Recorded by'],
-            $this->movementRows($from, $to, $filters)->map(fn (InventoryTransaction $t) => [
+            $this->movementRows($from, $to, $filters)->map(fn(InventoryTransaction $t) => [
                 $t->created_at->toDateString(),
                 $t->created_at->format('H:i'),
                 $t->product->sku,
@@ -74,7 +76,7 @@ class ReportController extends Controller
         return $this->csv(
             'low_stock_report_' . now()->format('Y_m_d') . '.csv',
             ['SKU', 'Product', 'Category', 'On Hand', 'Low Stock Level', 'Deficit', 'Suggested Order', 'Unit Price', 'Status'],
-            $this->lowStockReport($filters)->map(fn (Product $p) => [
+            $this->lowStockReport($filters)->map(fn(Product $p) => [
                 $p->sku,
                 $p->name,
                 $p->category->name,
@@ -91,15 +93,34 @@ class ReportController extends Controller
     /** Lab 5 export, unchanged columns, with the grand total as the last line. */
     private function exportValuation(): StreamedResponse
     {
-        $rows = Product::with('category', 'brand')->orderBy('name')->get()->map(fn (Product $p) => [
-            $p->sku, $p->name, $p->category->name, $p->brand?->name, $p->supplier,
-            $p->quantity, $p->reorder_level, number_format((float) $p->unit_price, 2),
-            number_format($p->stockValue(), 2), $p->stockStatus(),
+        $rows = Product::with('category', 'brand')->orderBy('name')->get()->map(fn(Product $p) => [
+            $p->sku,
+            $p->name,
+            $p->category->name,
+            $p->brand?->name,
+            $p->supplier,
+            $p->quantity,
+            $p->reorder_level,
+            number_format((float) $p->unit_price, 2),
+            number_format($p->stockValue(), 2),
+            $p->stockStatus(),
         ]);
 
-        $rows->push(['', '', '', '', '', '', '', 'TOTAL INVENTORY VALUE', number_format(
-            (float) Product::sum(DB::raw('quantity * unit_price')), 2
-        ), '']);
+        $rows->push([
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            'TOTAL INVENTORY VALUE',
+            number_format(
+                (float) Product::sum(DB::raw('quantity * unit_price')),
+                2
+            ),
+            ''
+        ]);
 
         return $this->csv(
             'inventory_valuation_' . now()->format('Y_m_d') . '.csv',
@@ -121,15 +142,15 @@ class ReportController extends Controller
         // withTrashed(): a movement is history, and soft-deleting a product
         // must not silently remove its rows from the Stock Movement Report.
         return Product::withTrashed()
-            ->when($filters['product_id'] ?? null, fn ($q, $id) => $q->whereKey($id))
+            ->when($filters['product_id'] ?? null, fn($q, $id) => $q->whereKey($id))
             ->orderBy('name')
             ->get()
             ->flatMap(function (Product $product) use ($from, $to) {
                 return $product->transactionHistory($from, $to)
-                    ->each(fn (InventoryTransaction $t) => $t->setRelation('product', $product));
+                    ->each(fn(InventoryTransaction $t) => $t->setRelation('product', $product));
             })
-            ->when($filters['type'] ?? null, fn ($c, $type) => $c->where('type', $type))
-            ->sortBy(fn (InventoryTransaction $t) => [$t->created_at->timestamp, $t->id])
+            ->when($filters['type'] ?? null, fn($c, $type) => $c->where('type', $type))
+            ->sortBy(fn(InventoryTransaction $t) => [$t->created_at->timestamp, $t->id])
             ->values();
     }
 
@@ -138,11 +159,11 @@ class ReportController extends Controller
     {
         return Product::with('category')
             ->belowReorderLevel()
-            ->when($filters['category_id'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
-            ->when($filters['search'] ?? null, fn ($q, $term) => $q->where(
-                fn ($w) => $w->where('name', 'like', "%{$term}%")
-                             ->orWhere('sku', 'like', "%{$term}%")
-                             ->orWhere('supplier', 'like', "%{$term}%")
+            ->when($filters['category_id'] ?? null, fn($q, $id) => $q->where('category_id', $id))
+            ->when($filters['search'] ?? null, fn($q, $term) => $q->where(
+                fn($w) => $w->where('name', 'like', "%{$term}%")
+                    ->orWhere('sku', 'like', "%{$term}%")
+                    ->orWhere('supplier', 'like', "%{$term}%")
             ))
             ->orderBy('quantity')
             ->orderBy('name')
@@ -153,10 +174,10 @@ class ReportController extends Controller
     private function filters(Request $request): array
     {
         return [
-            'product_id'  => $request->filled('product_id') ? (int) $request->product_id : null,
-            'type'        => in_array($request->type, InventoryTransaction::TYPES) ? $request->type : null,
+            'product_id' => $request->filled('product_id') ? (int) $request->product_id : null,
+            'type' => in_array($request->type, InventoryTransaction::TYPES) ? $request->type : null,
             'category_id' => $request->filled('category_id') ? (int) $request->category_id : null,
-            'search'      => trim((string) $request->search) ?: null,
+            'search' => trim((string) $request->search) ?: null,
         ];
     }
 
@@ -194,17 +215,17 @@ class ReportController extends Controller
                     ->first()->total;
 
                 return [
-                    'name'     => $category->name,
-                    'items'    => $category->products_count,
-                    'units'    => (int) ($category->products_sum_quantity ?? 0),
-                    'value'    => $value,
+                    'name' => $category->name,
+                    'items' => $category->products_count,
+                    'units' => (int) ($category->products_sum_quantity ?? 0),
+                    'value' => $value,
                     'low_stock' => $category->products()->lowStock()->count(),
                 ];
             });
 
         $byBrand = Brand::withCount('products')->get()->map(function (Brand $brand) {
             return [
-                'name'  => $brand->name,
+                'name' => $brand->name,
                 'items' => $brand->products_count,
                 'value' => (float) $brand->products()
                     ->selectRaw('COALESCE(SUM(quantity * unit_price), 0) as total')
@@ -220,17 +241,17 @@ class ReportController extends Controller
 
         return [
             'totals' => [
-                'products'        => Product::count(),
-                'units'           => (int) Product::sum('quantity'),
-                'value'           => (float) Product::sum(DB::raw('quantity * unit_price')),
-                'low_stock'       => Product::lowStock()->count(),
-                'out_of_stock'    => Product::outOfStock()->count(),
-                'stock_in_units'  => (int) InventoryTransaction::where('type', InventoryTransaction::TYPE_IN)->sum('quantity'),
+                'products' => Product::count(),
+                'units' => (int) Product::sum('quantity'),
+                'value' => (float) Product::sum(DB::raw('quantity * unit_price')),
+                'low_stock' => Product::lowStock()->count(),
+                'out_of_stock' => Product::outOfStock()->count(),
+                'stock_in_units' => (int) InventoryTransaction::where('type', InventoryTransaction::TYPE_IN)->sum('quantity'),
                 'stock_out_units' => (int) InventoryTransaction::where('type', InventoryTransaction::TYPE_OUT)->sum('quantity'),
             ],
-            'byCategory'  => $byCategory,
-            'byBrand'     => $byBrand,
-            'suppliers'   => $suppliers,
+            'byCategory' => $byCategory,
+            'byBrand' => $byBrand,
+            'suppliers' => $suppliers,
         ];
     }
 }

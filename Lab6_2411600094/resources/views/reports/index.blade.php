@@ -73,6 +73,8 @@
                                 <option value="">All Types</option>
                                 <option value="in" @selected($filters['type'] === 'in')>Stock In</option>
                                 <option value="out" @selected($filters['type'] === 'out')>Stock Out</option>
+                                <option value="return" @selected($filters['type'] === 'return')>Return</option>
+                                <option value="damage" @selected($filters['type'] === 'damage')>Damage</option>
                                 <option value="adjustment" @selected($filters['type'] === 'adjustment')>Adjustment</option>
                             </select>
                         </div>

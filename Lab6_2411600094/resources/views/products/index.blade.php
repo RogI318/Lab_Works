@@ -112,10 +112,21 @@
                                     <a href="{{ route('products.edit', $product) }}" class="btn btn-sm btn-warning" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <span class="badge {{ $product->activeBadgeClass() }} align-middle"
-                                          title="{{ $product->isActive() ? 'In the catalog and available' : 'Out of stock: becomes Active again when restocked' }}">
-                                        {{ $product->activeLabel() }}
-                                    </span>
+                                      <span class="badge {{ $product->activeBadgeClass() }} align-middle">{{ $product->activeLabel() }}</span>
+                                      @if(auth()->user()->canManageStock())
+                                          @if($product->quantity <= 0)
+                                              <form method="POST" action="{{ route('products.deactivate', $product) }}" class="d-inline">
+                                                  @csrf @method('PATCH')
+                                                  <button class="btn btn-sm btn-outline-secondary" type="submit">{{ $product->is_active ? 'Deactivate' : 'Activate' }}</button>
+                                              </form>
+                                          @endif
+                                          @unless($product->is_active)
+                                              <form method="POST" action="{{ route('products.destroy', $product) }}" class="d-inline" onsubmit="return confirm('Move this inactive product to Trash? Its transaction history will be preserved.');">
+                                                  @csrf @method('DELETE')
+                                                  <button class="btn btn-sm btn-outline-danger" type="submit" title="Move to Trash"><i class="bi bi-trash"></i></button>
+                                              </form>
+                                          @endunless
+                                      @endif
                                 </td>
                             </tr>
                         @empty
