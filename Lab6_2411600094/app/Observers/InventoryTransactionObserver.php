@@ -48,7 +48,9 @@ class InventoryTransactionObserver
     public function created(InventoryTransaction $transaction): void
     {
         DB::transaction(function () use ($transaction) {
-            $product = $transaction->product()->firstOrFail();
+            // Resolve the related model explicitly so static analysis knows
+            // this is a Product (the relation's inferred type can be stdClass).
+            $product = Product::withTrashed()->findOrFail($transaction->product_id);
             $delta = $transaction->signedQuantity();
 
             $before = $transaction->quantity_before ?? (int) $product->quantity;
@@ -94,7 +96,7 @@ class InventoryTransactionObserver
      */
     public function deleted(InventoryTransaction $transaction): void
     {
-        $product = $transaction->product()->first();
+        $product = Product::withTrashed()->find($transaction->product_id);
 
         if ($product) {
             $transaction->product()->decrement('quantity', $transaction->signedQuantity());
@@ -119,6 +121,7 @@ class InventoryTransactionObserver
             return;
         }
 
+        /** @var \Illuminate\Support\Collection<int, User> $recipients */
         $recipients = User::query()->where(fn($q) => $q->where('role', 'admin')->orWhere('is_admin', true)->orWhere('role', 'staff'))->get()->reject(
             fn(User $admin) => $admin->unreadNotifications->contains(
                 fn($n) => ($n->data['product_id'] ?? null) === $product->id
@@ -127,7 +130,9 @@ class InventoryTransactionObserver
 
         if ($recipients->isNotEmpty()) {
             try {
-                Notification::send($recipients, new LowStockNotification($product));
+                foreach ($recipients as $recipient) {
+                    $recipient->notify(new LowStockNotification($product));
+                }
             } catch (\Throwable $e) {
                 report($e);
             }

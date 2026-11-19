@@ -21,10 +21,10 @@ class InventoryTransactionController extends Controller
     {
         $transactions = InventoryTransaction::query()
             ->with(['product', 'user'])
-            ->when($request->product_id, fn ($q, $id) => $q->where('product_id', $id))
-            ->when($request->type, fn ($q, $type) => $q->where('type', $type))
-            ->when($request->date_from, fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
-            ->when($request->date_to, fn ($q, $date) => $q->whereDate('created_at', '<=', $date))
+            ->when($request->product_id, fn($q, $id) => $q->where('product_id', $id))
+            ->when($request->type, fn($q, $type) => $q->where('type', $type))
+            ->when($request->date_from, fn($q, $date) => $q->whereDate('created_at', '>=', $date))
+            ->when($request->date_to, fn($q, $date) => $q->whereDate('created_at', '<=', $date))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate(20)
@@ -34,9 +34,9 @@ class InventoryTransactionController extends Controller
             'transactions' => $transactions,
             // The filter dropdown only needs the names; the Part 8 adjustment
             // modal (included in the same page) also reads quantity/reorder level.
-            'products'     => Product::orderBy('name')
+            'products' => Product::orderBy('name')
                 ->get(['id', 'name', 'sku', 'quantity', 'reorder_level']),
-            'reasons'      => InventoryTransaction::REASONS,
+            'reasons' => InventoryTransaction::REASONS,
         ]);
     }
 
@@ -52,7 +52,7 @@ class InventoryTransactionController extends Controller
                 ->append('stock_status', 'stock_status_color'),
             // Manual ledger entries: in/out plus Return and Damage; 'adjustment'
             // rows come from the dedicated Part 8 stock-adjustment feature.
-            'types'    => $this->typeOptions(),
+            'types' => $this->typeOptions(),
             // "+ Transaction" on a product page opens this form with it preselected.
             'selectedProductId' => $request->integer('product_id') ?: null,
         ]);
@@ -69,13 +69,13 @@ class InventoryTransactionController extends Controller
         try {
             // DB::transaction ties the ledger row and the stock update
             // together: if the observer throws, the INSERT is rolled back.
-            $transaction = DB::transaction(fn () => InventoryTransaction::create([
-                'product_id'       => $validated['product_id'],
-                'type'             => $validated['type'],
-                'quantity'         => $validated['quantity'],
+            $transaction = DB::transaction(fn() => InventoryTransaction::create([
+                'product_id' => $validated['product_id'],
+                'type' => $validated['type'],
+                'quantity' => $validated['quantity'],
                 'reference_number' => $validated['reference_number'] ?? null,
-                'notes'            => $validated['notes'] ?? null,
-                'user_id'          => $request->user()->id,
+                'notes' => $validated['notes'] ?? null,
+                'user_id' => $request->user()->id,
             ]));
         } catch (InsufficientStockException $e) {
             // Reached only on a race the pre-validation could not see
@@ -107,7 +107,7 @@ class InventoryTransactionController extends Controller
     {
         abort_unless($request->user()->is_admin, 403, 'Only admins may delete transactions.');
 
-        DB::transaction(fn () => $transaction->delete());
+        DB::transaction(fn() => $transaction->delete());
 
         return redirect()
             ->route('transactions.index')
@@ -126,22 +126,22 @@ class InventoryTransactionController extends Controller
     private function makeValidator(Request $request): \Illuminate\Validation\Validator
     {
         return Validator::make($request->all(), [
-            'product_id'       => ['required', Rule::exists('products', 'id')],
-            'type'             => ['required', Rule::in(array_keys($this->typeOptions()))],
-            'quantity'         => ['required', 'integer', 'min:1', 'max:1000000'],
+            'product_id' => ['required', Rule::exists('products', 'id')],
+            'type' => ['required', Rule::in(array_keys($this->typeOptions()))],
+            'quantity' => ['required', 'integer', 'min:1', 'max:1000000'],
             'reference_number' => ['nullable', 'string', 'max:255'],
-            'notes'            => ['nullable', 'string', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ], [
             'product_id.exists' => 'The selected product no longer exists.',
-            'type.in'           => 'Choose Stock In, Stock Out, Return or Damage.',
-            'quantity.min'      => 'Quantity must be at least 1.',
+            'type.in' => 'Choose Stock In, Stock Out, Return or Damage.',
+            'quantity.min' => 'Quantity must be at least 1.',
         ])->after(function ($validator) use ($request) {
-            if (! in_array($request->input('type'), [InventoryTransaction::TYPE_OUT, InventoryTransaction::TYPE_DAMAGE], true)) {
+            if (!in_array($request->input('type'), [InventoryTransaction::TYPE_OUT, InventoryTransaction::TYPE_DAMAGE], true)) {
                 return;
             }
 
             $product = Product::find($request->input('product_id'));
-            $wanted  = (int) $request->input('quantity');
+            $wanted = (int) $request->input('quantity');
 
             if ($product && $wanted > $product->quantity) {
                 $validator->errors()->add(
@@ -156,8 +156,8 @@ class InventoryTransactionController extends Controller
     private function typeOptions(): array
     {
         return [
-            InventoryTransaction::TYPE_IN     => 'Stock In',
-            InventoryTransaction::TYPE_OUT    => 'Stock Out',
+            InventoryTransaction::TYPE_IN => 'Stock In',
+            InventoryTransaction::TYPE_OUT => 'Stock Out',
             InventoryTransaction::TYPE_RETURN => 'Return',
             InventoryTransaction::TYPE_DAMAGE => 'Damage',
         ];

@@ -19,20 +19,29 @@ class Product extends Model
 {
     use SoftDeletes, Auditable;
 
-    public const STATUS_IN_STOCK  = 'In Stock';
+    public const STATUS_IN_STOCK = 'In Stock';
     public const STATUS_LOW_STOCK = 'Low Stock';
     public const STATUS_OUT_STOCK = 'Out of Stock';
 
     protected $fillable = [
-        'name', 'sku', 'description', 'category_id', 'brand_id',
-        'quantity', 'reorder_level', 'unit_price', 'supplier', 'is_active',
+        'name',
+        'sku',
+        'description',
+        'category_id',
+        'brand_id',
+        'quantity',
+        'reorder_level',
+        'unit_price',
+        'supplier',
+        'supplier_id',
+        'is_active',
     ];
 
     protected $casts = [
-        'quantity'      => 'integer',
+        'quantity' => 'integer',
         'reorder_level' => 'integer',
-        'unit_price'    => 'decimal:2',
-        'is_active'     => 'boolean',
+        'unit_price' => 'decimal:2',
+        'is_active' => 'boolean',
     ];
 
     /* ---------- Relationships ---------- */
@@ -44,6 +53,11 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function supplierRecord(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
     }
 
     public function transactions(): HasMany
@@ -76,8 +90,10 @@ class Product extends Model
 
     public function stockStatus(): string
     {
-        if ($this->isOutOfStock()) return self::STATUS_OUT_STOCK;
-        if ($this->isLowStock())   return self::STATUS_LOW_STOCK;
+        if ($this->isOutOfStock())
+            return self::STATUS_OUT_STOCK;
+        if ($this->isLowStock())
+            return self::STATUS_LOW_STOCK;
 
         return self::STATUS_IN_STOCK;
     }
@@ -87,7 +103,7 @@ class Product extends Model
         return match ($this->stockStatus()) {
             self::STATUS_LOW_STOCK => 'bg-warning text-dark',
             self::STATUS_OUT_STOCK => 'bg-danger',
-            default                => 'bg-success',
+            default => 'bg-success',
         };
     }
 
@@ -103,7 +119,7 @@ class Product extends Model
         return match ($this->stockStatus()) {
             self::STATUS_LOW_STOCK => 'warning',
             self::STATUS_OUT_STOCK => 'danger',
-            default                => 'success',
+            default => 'success',
         };
     }
 
@@ -153,7 +169,7 @@ class Product extends Model
             ->orderBy('id')
             ->get();
 
-        $balance = $this->quantity - (int) $all->sum(fn (InventoryTransaction $t) => $t->signedQuantity());
+        $balance = $this->quantity - (int) $all->sum(fn(InventoryTransaction $t) => $t->signedQuantity());
 
         $all->each(function (InventoryTransaction $t) use (&$balance) {
             $balance += $t->signedQuantity();
@@ -161,11 +177,11 @@ class Product extends Model
         });
 
         $fromDate = $from ? Carbon::parse($from)->startOfDay() : null;
-        $toDate   = $to ? Carbon::parse($to)->endOfDay() : null;
+        $toDate = $to ? Carbon::parse($to)->endOfDay() : null;
 
         return $all->filter(function (InventoryTransaction $t) use ($fromDate, $toDate) {
-            return (! $fromDate || $t->created_at->gte($fromDate))
-                && (! $toDate || $t->created_at->lte($toDate));
+            return (!$fromDate || $t->created_at->gte($fromDate))
+                && (!$toDate || $t->created_at->lte($toDate));
         })->values();
     }
 
@@ -178,7 +194,7 @@ class Product extends Model
     public function scopeLowStock(Builder $query): Builder
     {
         return $query->where('quantity', '>', 0)
-                     ->whereColumn('quantity', '<=', 'reorder_level');
+            ->whereColumn('quantity', '<=', 'reorder_level');
     }
 
     public function scopeOutOfStock(Builder $query): Builder
@@ -198,8 +214,8 @@ class Product extends Model
     /** Part 4 Step 3: accepts a Category model, its id, or its name. */
     public function scopeInCategory(Builder $query, Category|int|string $category): Builder
     {
-        if (is_string($category) && ! ctype_digit($category)) {
-            return $query->whereHas('category', fn (Builder $q) => $q->where('name', $category));
+        if (is_string($category) && !ctype_digit($category)) {
+            return $query->whereHas('category', fn(Builder $q) => $q->where('name', $category));
         }
 
         $id = $category instanceof Category ? $category->id : (int) $category;

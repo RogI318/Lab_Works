@@ -22,9 +22,10 @@
                         @csrf
 
                         <div class="mb-3">
-                            <label for="product_id" class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
+                            <label for="product_id" class="form-label fw-semibold">Product <span
+                                    class="text-danger">*</span></label>
                             <select name="product_id" id="product_id"
-                                    class="form-select @error('product_id') is-invalid @enderror" required>
+                                class="form-select @error('product_id') is-invalid @enderror" required>
                                 <option value=""></option>
                                 @foreach($products as $product)
                                     <option value="{{ $product->id }}" @selected(old('product_id', $selectedProductId ?? null) == $product->id)>
@@ -32,68 +33,77 @@
                                     </option>
                                 @endforeach
                             </select>
-                            @error('product_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            @error('product_id')
+                            <div class="invalid-feedback">{{ $message }}</div> @enderror
 
                             {{-- Live stock hint filled by JavaScript --}}
                             <div id="stockHint" class="form-text"></div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Transaction Type <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Transaction Type <span
+                                    class="text-danger">*</span></label>
                             <div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="type" id="type_in"
-                                           value="in" @checked(old('type', 'in') === 'in')>
+                                    <input class="form-check-input" type="radio" name="type" id="type_in" value="in"
+                                        @checked(old('type', 'in') === 'in')>
                                     <label class="form-check-label" for="type_in">
                                         <span class="badge bg-success">+ Stock In</span>
                                     </label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="type" id="type_out"
-                                           value="out" @checked(old('type') === 'out')>
+                                    <input class="form-check-input" type="radio" name="type" id="type_out" value="out"
+                                        @checked(old('type') === 'out')>
                                     <label class="form-check-label" for="type_out">
                                         <span class="badge bg-danger">&minus; Stock Out</span>
                                     </label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="type" id="type_return"
-                                           value="return" @checked(old('type') === 'return')>
+                                    <input class="form-check-input" type="radio" name="type" id="type_return" value="return"
+                                        @checked(old('type') === 'return')>
                                     <label class="form-check-label" for="type_return">
                                         <span class="badge bg-success">+ Return</span>
                                     </label>
                                 </div>
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="type" id="type_damage"
-                                           value="damage" @checked(old('type') === 'damage')>
+                                    <input class="form-check-input" type="radio" name="type" id="type_damage" value="damage"
+                                        @checked(old('type') === 'damage')>
                                     <label class="form-check-label" for="type_damage">
                                         <span class="badge bg-danger">&minus; Damage</span>
                                     </label>
                                 </div>
                             </div>
-                            @error('type') <div class="text-danger small">{{ $message }}</div> @enderror
+                            @error('type')
+                            <div class="text-danger small">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="mb-3">
-                            <label for="quantity" class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
-                            <input type="number" name="quantity" id="quantity" class="form-control @error('quantity') is-invalid @enderror"
-                                   min="1" max="1000000" step="1" value="{{ old('quantity', 1) }}" required>
-                            @error('quantity') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <label for="quantity" class="form-label fw-semibold">Quantity <span
+                                    class="text-danger">*</span></label>
+                            <input type="number" name="quantity" id="quantity"
+                                class="form-control @error('quantity') is-invalid @enderror" min="1" max="1000000" step="1"
+                                value="{{ old('quantity', 1) }}" required>
+                            @error('quantity')
+                            <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <div id="quantityHint" class="form-text"></div>
                         </div>
 
                         <div class="mb-3">
                             <label for="reference_number" class="form-label fw-semibold">Reference Number</label>
                             <input type="text" name="reference_number" id="reference_number"
-                                   class="form-control @error('reference_number') is-invalid @enderror"
-                                   maxlength="255" placeholder="PO / SO / INV number (optional)" value="{{ old('reference_number') }}">
-                            @error('reference_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                class="form-control @error('reference_number') is-invalid @enderror" maxlength="255"
+                                placeholder="PO / SO / INV number (optional)" value="{{ old('reference_number') }}">
+                            @error('reference_number')
+                            <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="mb-4">
                             <label for="notes" class="form-label fw-semibold">Notes</label>
                             <textarea name="notes" id="notes" class="form-control @error('notes') is-invalid @enderror"
-                                      rows="3" maxlength="1000" placeholder="Context for the audit trail (optional)">{{ old('notes') }}</textarea>
-                            @error('notes') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                rows="3" maxlength="1000"
+                                placeholder="Context for the audit trail (optional)">{{ old('notes') }}</textarea>
+                            @error('notes')
+                            <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="d-flex gap-2">
@@ -120,7 +130,10 @@
             border: 1px solid var(--theme-light-accent);
             border-radius: 8px;
         }
-        .select2-container--default .select2-selection--single:focus { border-color: var(--theme-primary); }
+
+        .select2-container--default .select2-selection--single:focus {
+            border-color: var(--theme-primary);
+        }
     </style>
 @endpush
 

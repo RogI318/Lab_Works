@@ -15,10 +15,13 @@ class NotificationController extends Controller
         $user = $request->user();
         return response()->json([
             'unread' => $user->unreadNotifications()->count(),
-            'notifications' => $user->notifications()->latest()->take(15)->get()->map(fn ($n) => [
-                'id' => $n->id, 'subject' => $n->data['subject'] ?? 'Inventory alert',
-                'created' => $n->created_at->diffForHumans(), 'unread' => $n->read_at === null,
-                'url' => route('notifications.show', $n->id), 'quantity' => $n->data['quantity'] ?? 1,
+            'notifications' => $user->notifications()->latest()->take(15)->get()->map(fn($n) => [
+                'id' => $n->id,
+                'subject' => $n->data['subject'] ?? 'Inventory alert',
+                'created' => $n->created_at->diffForHumans(),
+                'unread' => $n->read_at === null,
+                'url' => route('notifications.show', $n->id),
+                'quantity' => $n->data['quantity'] ?? 1,
             ]),
         ]);
     }

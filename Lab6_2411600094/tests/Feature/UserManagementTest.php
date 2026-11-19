@@ -15,7 +15,8 @@ class UserManagementTest extends TestCase
         $this->post('/register', [
             'name' => 'Test',
             'email' => 'x@example.com',
-            'password' => 'password', 'password_confirmation' => 'password',
+            'password' => 'password',
+            'password_confirmation' => 'password',
         ])->assertRedirect(route('verification.notice', absolute: false));
 
         $this->assertDatabaseHas('users', [
@@ -51,11 +52,11 @@ class UserManagementTest extends TestCase
         $this->assertSame(0, preg_match('/<input[^>]*id="user-add-admin"[^>]*checked/i', $html));
 
         $this->actingAs($admin)->post('/users', [
-            'name'                  => 'New Staff',
-            'email'                 => 'staff@example.com',
-            'password'              => 'password123',
+            'name' => 'New Staff',
+            'email' => 'staff@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
-            'role'                  => 'staff',
+            'role' => 'staff',
         ])->assertRedirect(route('users.index'));
 
         $this->assertDatabaseHas('users', ['email' => 'staff@example.com', 'is_admin' => false]);

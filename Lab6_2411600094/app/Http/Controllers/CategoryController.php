@@ -11,10 +11,10 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::withCount('products')
-                              ->withSum('products', 'quantity')
-                              ->orderBy('id')
-                              ->paginate(10)
-                              ->withQueryString();
+            ->withSum('products', 'quantity')
+            ->orderBy('id')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('categories.index', compact('categories'));
     }
@@ -27,8 +27,10 @@ class CategoryController extends Controller
         // Submitted from the "+" button beside the Category dropdown on a product form.
         if ($request->input('source') === 'product-form') {
             return redirect()
-                ->route($request->input('product_id') ? 'products.edit' : 'products.create',
-                        array_filter(['product' => $request->input('product_id')]))
+                ->route(
+                    $request->input('product_id') ? 'products.edit' : 'products.create',
+                    array_filter(['product' => $request->input('product_id')])
+                )
                 ->with('success', "Category \"{$category->name}\" added — it is already selected below.")
                 ->with('new_category_id', $category->id);
         }
@@ -68,7 +70,7 @@ class CategoryController extends Controller
     private function rules($ignoreId = null): array
     {
         return [
-            'name'        => ['required', 'string', 'max:100', Rule::unique('categories', 'name')->ignore($ignoreId)],
+            'name' => ['required', 'string', 'max:100', Rule::unique('categories', 'name')->ignore($ignoreId)],
             'description' => 'nullable|string|max:255',
         ];
     }
@@ -77,8 +79,8 @@ class CategoryController extends Controller
     {
         return [
             'name.required' => 'Please provide the category name.',
-            'name.max'      => 'Category names are kept short — 100 characters or fewer.',
-            'name.unique'   => 'That category already exists.',
+            'name.max' => 'Category names are kept short — 100 characters or fewer.',
+            'name.unique' => 'That category already exists.',
         ];
     }
 }

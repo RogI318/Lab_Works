@@ -147,6 +147,9 @@
                                 Categories
                             </a>
                         </li>
+                        @if ($navUser->canManageStock())
+                            <li class="nav-item"><a class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}" href="{{ route('suppliers.index') }}">Suppliers</a></li>
+                        @endif
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
                                href="{{ route('reports.index') }}">

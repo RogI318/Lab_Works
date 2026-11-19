@@ -12,6 +12,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockAdjustmentController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('sales-orders/latest', [InventoryOrderController::class, 'latest'])->defaults('direction', 'sale')->name('sales-orders.latest');
     Route::get('orders/create', [InventoryOrderController::class, 'create'])->name('orders.create');
     Route::post('orders', [InventoryOrderController::class, 'store'])->name('orders.store');
+    Route::get('orders/{order}/receipt', [InventoryOrderController::class, 'receipt'])->whereNumber('order')->name('orders.receipt');
     Route::post('orders/{order}/approve', [InventoryOrderController::class, 'approve'])->whereNumber('order')->name('orders.approve')->middleware('can:manage-users');
     Route::get('orders/{order}', [InventoryOrderController::class, 'show'])->whereNumber('order')->name('orders.show');
     Route::get('orders/{order}/status', [InventoryOrderController::class, 'status'])->whereNumber('order')->name('orders.status');
@@ -93,6 +95,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->except(['create', 'edit', 'show'])
         ->missing(fn() => redirect()->route('categories.index'));
 
+    Route::patch('suppliers/{supplier}/status', [SupplierController::class, 'toggleStatus'])->name('suppliers.status');
+    Route::post('suppliers/quick', [InventoryOrderController::class, 'quickStoreSupplier'])->name('suppliers.quick-store');
+    Route::resource('suppliers', SupplierController::class)->except(['create', 'edit']);
+
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
@@ -110,7 +116,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Catch-all for each section. It must stay AFTER the resources above.
     // Anything that is not a real page, like /products/* or /brands/abc,
     // goes back to that section's list and changes nothing.
-    foreach (['products', 'brands', 'categories', 'transactions'] as $section) {
+    foreach (['products', 'brands', 'categories', 'transactions', 'suppliers'] as $section) {
         Route::get($section . '/{any}', fn() => redirect()->route($section . '.index'))
             ->where('any', '.*');
     }
@@ -135,10 +141,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Login, logout, password reset... (Breeze). Do not remove this line.
 require __DIR__ . '/auth.php';
 
-// Any other URL that does not exist (/dashboard/*, /public, /vendor, ...)
-// goes to the dashboard if logged in, or to login if not.
-Route::fallback(function () {
+// Catch malformed/unknown URLs too, and send visitors to a useful page
+// instead of showing the framework or web-server 404 screen.
+$unknownUrlDestination = function () {
     return auth()->check()
         ? redirect()->route('dashboard')
         : redirect()->route('login');
-});
+};
+
+Route::any('/{unknownPath?}', $unknownUrlDestination)
+    ->where('unknownPath', '.*')
+    ->name('unknown.redirect');
+
+Route::fallback($unknownUrlDestination);

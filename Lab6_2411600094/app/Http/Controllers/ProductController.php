@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -56,6 +57,7 @@ class ProductController extends Controller
             'products' => $products,
             'categories' => Category::orderBy('name')->get(),
             'brands' => Brand::orderBy('name')->get(),
+            'suppliers' => Supplier::where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -115,7 +117,7 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         abort_unless(auth()->user()->canManageStock(), 403);
-        return view('products.edit', ['product' => $product] + $this->formOptions());
+        return view('products.edit', ['product' => $product] + $this->formOptions($product));
     }
 
     public function update(Request $request, Product $product)
@@ -200,11 +202,16 @@ class ProductController extends Controller
         }
     }
 
-    private function formOptions(): array
+    private function formOptions(?Product $product = null): array
     {
         return [
             'categories' => Category::orderBy('name')->get(),
             'brands' => Brand::orderBy('name')->get(),
+            'suppliers' => Supplier::query()
+                ->where('is_active', true)
+                ->when($product?->supplier_id, fn($query, $supplierId) => $query->orWhereKey($supplierId))
+                ->orderBy('name')
+                ->get(),
         ];
     }
 
@@ -220,6 +227,7 @@ class ProductController extends Controller
             'reorder_level' => 'required|integer|min:0|max:1000000',
             'unit_price' => 'required|numeric|min:0|max:99999999.99',
             'supplier' => 'nullable|string|max:255',
+            'supplier_id' => 'nullable|integer|exists:suppliers,id',
         ];
     }
 

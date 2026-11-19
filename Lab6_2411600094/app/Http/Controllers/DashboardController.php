@@ -16,67 +16,77 @@ class DashboardController extends Controller
         $this->syncLowStockAlerts();
 
         // ---- Stat cards (Part 7, Step 2 of the lab manual) ----
-        $totalProducts   = Product::count();
-        $lowStockCount   = Product::lowStock()->count();
+        $totalProducts = Product::count();
+        $lowStockCount = Product::lowStock()->count();
         $outOfStockCount = Product::outOfStock()->count();
-        $inventoryValue  = (float) Product::sum(DB::raw('quantity * unit_price'));
+        $inventoryValue = (float) Product::sum(DB::raw('quantity * unit_price'));
 
         // ---- Alert center ----
         $lowStockItems = Product::with('category')
-                                ->lowStock()
-                                ->orderBy('quantity')
-                                ->take(6)
-                                ->get();
+            ->lowStock()
+            ->orderBy('quantity')
+            ->take(6)
+            ->get();
 
         $outOfStockItems = Product::with('category')->outOfStock()->orderBy('name')->take(6)->get();
 
         // ---- Recent additions + latest movements ----
-        $recentProducts  = Product::with('category')->latest()->take(5)->get();
-        $recentMoves     = InventoryTransaction::with('product', 'user')->latest()->take(8)->get();
+        $recentProducts = Product::with('category')->latest()->take(5)->get();
+        $recentMoves = InventoryTransaction::with('product', 'user')->latest()->take(8)->get();
 
         // ---- Brand and category tables with their product counts ----
-        $brands     = Brand::withCount('products')->withSum('products', 'quantity')->orderBy('id')->get();
+        $brands = Brand::withCount('products')->withSum('products', 'quantity')->orderBy('id')->get();
         $categories = Category::withCount('products')->withSum('products', 'quantity')->orderBy('id')->get();
 
         // ---- Dashboard charts (Lab 5) ----
         $inStockCount = max(0, $totalProducts - $lowStockCount - $outOfStockCount);
         $statusChart = [
             'labels' => ['In Stock', 'Low Stock', 'Out of Stock'],
-            'data'   => [$inStockCount, $lowStockCount, $outOfStockCount],
+            'data' => [$inStockCount, $lowStockCount, $outOfStockCount],
         ];
 
         $categoryCountChart = [
             'labels' => $categories->pluck('name')->values(),
-            'data'   => $categories->pluck('products_count')->values(),
+            'data' => $categories->pluck('products_count')->values(),
         ];
 
         $categoryValues = Category::with('products:id,category_id,quantity,unit_price')
             ->orderBy('id')
             ->get()
-            ->map(fn ($category) => [
-                'name'  => $category->name,
-                'value' => round($category->products->sum(fn ($product) => $product->quantity * (float) $product->unit_price), 2),
+            ->map(fn($category) => [
+                'name' => $category->name,
+                'value' => round($category->products->sum(fn($product) => $product->quantity * (float) $product->unit_price), 2),
             ])
-            ->filter(fn ($row) => $row['value'] > 0)
+            ->filter(fn($row) => $row['value'] > 0)
             ->values();
 
         $categoryValueChart = [
             'labels' => $categoryValues->pluck('name'),
-            'data'   => $categoryValues->pluck('value'),
+            'data' => $categoryValues->pluck('value'),
         ];
 
         $lowestProducts = Product::orderBy('quantity')->orderBy('id')->take(8)->get();
         $stockLevelChart = [
-            'labels'   => $lowestProducts->pluck('name')->values(),
+            'labels' => $lowestProducts->pluck('name')->values(),
             'quantity' => $lowestProducts->pluck('quantity')->values(),
-            'reorder'  => $lowestProducts->pluck('reorder_level')->values(),
+            'reorder' => $lowestProducts->pluck('reorder_level')->values(),
         ];
 
         return view('dashboard', compact(
-            'totalProducts', 'lowStockCount', 'outOfStockCount', 'inventoryValue',
-            'lowStockItems', 'outOfStockItems',
-            'recentProducts', 'recentMoves', 'brands', 'categories',
-            'statusChart', 'categoryCountChart', 'categoryValueChart', 'stockLevelChart'
+            'totalProducts',
+            'lowStockCount',
+            'outOfStockCount',
+            'inventoryValue',
+            'lowStockItems',
+            'outOfStockItems',
+            'recentProducts',
+            'recentMoves',
+            'brands',
+            'categories',
+            'statusChart',
+            'categoryCountChart',
+            'categoryValueChart',
+            'stockLevelChart'
         ));
     }
 
@@ -90,7 +100,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        if (! $user || ! $user->is_admin) {
+        if (!$user || !$user->is_admin) {
             return;
         }
 
@@ -102,6 +112,6 @@ class DashboardController extends Controller
         Product::belowReorderLevel()
             ->whereNotIn('id', $alreadyAlerted)
             ->get()
-            ->each(fn (Product $product) => $user->notify(new LowStockNotification($product)));
+            ->each(fn(Product $product) => $user->notify(new LowStockNotification($product)));
     }
 }

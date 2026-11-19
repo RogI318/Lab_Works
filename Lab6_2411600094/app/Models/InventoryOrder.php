@@ -18,4 +18,9 @@ class InventoryOrder extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
 }

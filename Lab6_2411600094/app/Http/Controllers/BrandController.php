@@ -11,10 +11,10 @@ class BrandController extends Controller
     public function index()
     {
         $brands = Brand::withCount('products')
-                       ->withSum('products', 'quantity')
-                       ->orderBy('id')
-                       ->paginate(10)
-                       ->withQueryString();
+            ->withSum('products', 'quantity')
+            ->orderBy('id')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('brands.index', compact('brands'));
     }
@@ -27,8 +27,10 @@ class BrandController extends Controller
         // Submitted from the "+" button beside the Brand dropdown on a product form.
         if ($request->input('source') === 'product-form') {
             return redirect()
-                ->route($request->input('product_id') ? 'products.edit' : 'products.create',
-                        array_filter(['product' => $request->input('product_id')]))
+                ->route(
+                    $request->input('product_id') ? 'products.edit' : 'products.create',
+                    array_filter(['product' => $request->input('product_id')])
+                )
                 ->with('success', "Brand \"{$brand->name}\" added — it is already selected below.")
                 ->with('new_brand_id', $brand->id);
         }
@@ -68,7 +70,7 @@ class BrandController extends Controller
     private function rules($ignoreId = null): array
     {
         return [
-            'name'        => ['required', 'string', 'max:100', Rule::unique('brands', 'name')->ignore($ignoreId)],
+            'name' => ['required', 'string', 'max:100', Rule::unique('brands', 'name')->ignore($ignoreId)],
             'description' => 'nullable|string|max:255',
         ];
     }
@@ -77,8 +79,8 @@ class BrandController extends Controller
     {
         return [
             'name.required' => 'Please provide the brand name.',
-            'name.max'      => 'Brand names are kept short — 100 characters or fewer.',
-            'name.unique'   => 'That brand already exists.',
+            'name.max' => 'Brand names are kept short — 100 characters or fewer.',
+            'name.unique' => 'That brand already exists.',
         ];
     }
 }

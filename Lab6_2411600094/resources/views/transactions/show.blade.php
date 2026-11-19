@@ -31,7 +31,8 @@
                         </dd>
 
                         <dt>Stock before → after</dt>
-                        <dd>{{ $transaction->quantity_before ?? '—' }} → {{ $transaction->quantity_after ?? '—' }} units</dd>
+                        <dd>{{ $transaction->quantity_before ?? '—' }} → {{ $transaction->quantity_after ?? '—' }} units
+                        </dd>
 
                         @if ($transaction->isAdjustment())
                             <dt>Reason</dt>
@@ -62,7 +63,7 @@
                                 <span class="badge bg-secondary ms-1 align-middle">Deleted</span>
                             @else
                                 <a href="{{ route('products.show', $transaction->product) }}"
-                                   class="text-decoration-none">{{ $transaction->product->name }}</a>
+                                    class="text-decoration-none">{{ $transaction->product->name }}</a>
                             @endif
                         </h5>
                         <p class="text-muted mb-3"><code>{{ $transaction->product->sku }}</code>
@@ -100,7 +101,8 @@
                             <dd class="text-break">{{ $transaction->user->email }}</dd>
                             <dt>Role</dt>
                             <dd>
-                                <span class="badge {{ $transaction->user->is_admin ? 'text-bg-primary' : 'text-bg-secondary' }}">
+                                <span
+                                    class="badge {{ $transaction->user->is_admin ? 'text-bg-primary' : 'text-bg-secondary' }}">
                                     {{ $transaction->user->is_admin ? 'Admin' : 'Staff' }}
                                 </span>
                             </dd>
@@ -119,7 +121,7 @@
                     Deleting reverses this movement's effect on stock (audit correction, admin only).
                 </span>
                 <form method="POST" action="{{ route('transactions.destroy', $transaction) }}"
-                      onsubmit="return confirm('Delete transaction #{{ $transaction->id }} and reverse its stock impact?');">
+                    onsubmit="return confirm('Delete transaction #{{ $transaction->id }} and reverse its stock impact?');">
                     @csrf @method('DELETE')
                     <button class="btn btn-danger" type="submit">
                         <i class="bi bi-trash me-1"></i> Delete &amp; reverse
