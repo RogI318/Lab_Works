@@ -61,8 +61,13 @@
                     </small>
                 </div>
 
-                <div class="text-center mt-3">
-                    <small class="text-muted">Demo: admin@example.com / password123</small>
+                <hr class="my-3">
+
+                <div class="text-center">
+                    <small class="text-muted">
+                        Don't have an account?
+                        <a href="{{ route('register') }}" class="fw-semibold">Register</a>
+                    </small>
                 </div>
 
             </div>

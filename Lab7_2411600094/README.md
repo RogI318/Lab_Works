@@ -7,6 +7,19 @@ ledger, themed with the Lab 4 pink Bootstrap 5 palette.
 
 ---
 
+## Carried over from the latest Lab 5
+
+- **Registration + email verification** — public Register page is back; new accounts are regular users
+  and must confirm the emailed link (`verified` middleware). Existing accounts are marked verified by
+  migration `2026_11_17_000001_verify_existing_users`.
+- **User roles** — administrators can create and edit users using the Staff and Admin radio options; staff
+  use the inventory while admins can also manage accounts and privileged actions.
+- **Products have no delete** — a product shows *Active* while in stock and *Inactive* at quantity 0
+  (derived from quantity). Transaction history stays intact.
+- **Admin accounts can't be deleted**, and the Delete Account box is gone from Profile.
+- **Stricter routes** — IDs must be numeric, unknown product/brand/category/user URLs redirect to their list,
+  and any other unknown URL goes to the dashboard (or login).
+
 ## Part 1 — Environment setup
 
 | Item | Value |
@@ -160,7 +173,9 @@ out-of-stock — each linked to a brand and a category, and posts the matching `
 transactions (purchase orders and sales orders).
 
 ```bash
-php artisan migrate:fresh --seed
+# Never run migrate:fresh on a database with records you need to keep.
+# For an existing installation, use php artisan migrate only.
+php artisan migrate
 ```
 
 ## Part 9 — Theme & navigation
@@ -194,3 +209,24 @@ git branch -M main
 git remote add origin https://github.com/<username>/Lab5_2411600094.git
 git push -u origin main
 ```
+
+## Part 12 — Additive procurement workflows
+
+The advanced procurement workflows are separate from the existing inventory-order screens:
+
+- Existing purchase and sales orders remain at `/purchase-orders` and `/sales-orders`.
+- New purchase orders, sales orders, supplier management, supplier performance, and procurement
+  dashboard are available from the **Procurement** sidebar link under `/procurement`.
+- Supplier payment terms, lead times, minimums, product-supplier prices, and per-product reorder
+  package settings are maintained in the new procurement pages rather than replacing the existing forms.
+- The new `purchase_orders` and `sales_orders` tables do not replace or migrate records from
+  `inventory_orders`. Receiving purchase orders and delivering sales orders post movements through
+  the existing `inventory_transactions` ledger.
+- New procurement columns and supplier-product links are added by migrations. Apply them with
+  `php artisan migrate`; do not use `migrate:fresh` against an existing database.
+- Automatic reorder drafts can be generated from the Procurement Dashboard or with
+  `php artisan inventory:check-reorder`. The scheduler runs this check daily at 6:00 a.m.
+  Philippines time when `php artisan schedule:work` (or the system scheduler) is running.
+- Purchase-order emails are queued. Configure `MAIL_*` in `.env` and run
+  `php artisan queue:work --tries=3` to deliver them. PDF downloads and email attachments use
+  `barryvdh/laravel-dompdf`.

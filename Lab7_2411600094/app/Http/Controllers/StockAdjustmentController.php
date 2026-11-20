@@ -26,12 +26,12 @@ class StockAdjustmentController extends Controller
 
         return response()->json([
             'data' => [
-                'id'            => $product->id,
-                'name'          => $product->name,
-                'sku'           => $product->sku,
-                'quantity'      => $product->quantity,
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'quantity' => $product->quantity,
                 'reorder_level' => $product->reorder_level,
-                'stock_status'  => $product->stock_status,
+                'stock_status' => $product->stock_status,
             ],
         ]);
     }
@@ -42,14 +42,14 @@ class StockAdjustmentController extends Controller
         $this->authorizeAdjustment($request);
 
         $validator = Validator::make($request->all(), [
-            'product_id'     => ['required', 'integer', Rule::exists('products', 'id')],
+            'product_id' => ['required', 'integer', Rule::exists('products', 'id')],
             'physical_count' => ['required', 'integer', 'min:0', 'max:1000000'],
-            'reason'         => ['required', Rule::in(array_keys(InventoryTransaction::REASONS))],
-            'notes'          => ['required_if:reason,other', 'string', 'max:1000'],
+            'reason' => ['required', Rule::in(array_keys(InventoryTransaction::REASONS))],
+            'notes' => ['required_if:reason,other', 'string', 'max:1000'],
         ], [
             'physical_count.min' => 'A physical count cannot be negative.',
-            'reason.required'    => 'Choose why the count differs.',
-            'notes.required_if'  => 'Explain the adjustment in Notes when the reason is "Other".',
+            'reason.required' => 'Choose why the count differs.',
+            'notes.required_if' => 'Explain the adjustment in Notes when the reason is "Other".',
         ]);
 
         // Explicit target instead of back(): the modal's AJAX lookup for the
@@ -64,7 +64,7 @@ class StockAdjustmentController extends Controller
 
         $validated = $validator->validated();
 
-        $product    = Product::findOrFail($validated['product_id']);
+        $product = Product::findOrFail($validated['product_id']);
         $difference = $validated['physical_count'] - $product->quantity;
 
         if ($difference === 0) {
@@ -76,15 +76,15 @@ class StockAdjustmentController extends Controller
         $before = $product->quantity;
 
         try {
-            $transaction = DB::transaction(fn () => InventoryTransaction::create([
-                'product_id'       => $product->id,
-                'type'             => InventoryTransaction::TYPE_ADJUSTMENT,
+            $transaction = DB::transaction(fn() => InventoryTransaction::create([
+                'product_id' => $product->id,
+                'type' => InventoryTransaction::TYPE_ADJUSTMENT,
                 // signed on purpose: the observer passes it straight through
-                'quantity'         => $difference,
+                'quantity' => $difference,
                 'reference_number' => 'ADJ-' . now()->format('Ymd-His'),
-                'reason'           => $validated['reason'],
-                'notes'            => $validated['notes'] ?? null,
-                'user_id'          => $request->user()->id,
+                'reason' => $validated['reason'],
+                'notes' => $validated['notes'] ?? null,
+                'user_id' => $request->user()->id,
             ]));
         } catch (InsufficientStockException $e) {
             // Stock moved between page load and submit; re-count and retry.
@@ -107,6 +107,6 @@ class StockAdjustmentController extends Controller
     /** "Authorized users" = the admin flag added in Part 6. */
     private function authorizeAdjustment(Request $request): void
     {
-        abort_unless($request->user()->is_admin, 403, 'Only admins may adjust stock.');
+        abort_unless($request->user()->canManageStock(), 403, 'Only staff and admins may adjust stock.');
     }
 }

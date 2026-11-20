@@ -27,7 +27,7 @@
                                     class="form-select @error('product_id') is-invalid @enderror" required>
                                 <option value=""></option>
                                 @foreach($products as $product)
-                                    <option value="{{ $product->id }}" @selected(old('product_id') == $product->id)>
+                                    <option value="{{ $product->id }}" @selected(old('product_id', $selectedProductId ?? null) == $product->id)>
                                         {{ $product->name }} ({{ $product->sku }})
                                     </option>
                                 @endforeach
@@ -53,6 +53,20 @@
                                            value="out" @checked(old('type') === 'out')>
                                     <label class="form-check-label" for="type_out">
                                         <span class="badge bg-danger">&minus; Stock Out</span>
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="type_return"
+                                           value="return" @checked(old('type') === 'return')>
+                                    <label class="form-check-label" for="type_return">
+                                        <span class="badge bg-success">+ Return</span>
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="type" id="type_damage"
+                                           value="damage" @checked(old('type') === 'damage')>
+                                    <label class="form-check-label" for="type_damage">
+                                        <span class="badge bg-danger">&minus; Damage</span>
                                     </label>
                                 </div>
                             </div>
@@ -127,7 +141,7 @@
 
         function refreshStockInfo() {
             const product = stockData[productSelect.value];
-            const isOut = document.querySelector('input[name="type"]:checked')?.value === 'out';
+            const isOut = ['out', 'damage'].includes(document.querySelector('input[name="type"]:checked')?.value);
 
             if (!product) {
                 stockHint.textContent = '';
@@ -142,12 +156,12 @@
 
             if (isOut) {
                 quantityInput.max = product.quantity;
-                quantityHint.textContent = `Stock out is capped at the ${product.quantity} unit(s) available.`;
+                quantityHint.textContent = `Stock out / damage is capped at the ${product.quantity} unit(s) available.`;
                 quantityHint.className = 'form-text text-danger fw-semibold';
                 if (+quantityInput.value > product.quantity) quantityInput.value = product.quantity;
             } else {
                 quantityInput.removeAttribute('max');
-                quantityHint.textContent = 'Stock in can add any positive amount.';
+                quantityHint.textContent = 'Stock in / return can add any positive amount.';
                 quantityHint.className = 'form-text';
             }
         }

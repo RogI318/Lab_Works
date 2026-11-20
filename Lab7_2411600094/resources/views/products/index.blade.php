@@ -13,48 +13,63 @@
         </div>
     </div>
 
-    {{-- ===== Filter Panel (Lab 7 Part 7 Step 3: the shared filter components) ===== --}}
-    <x-filters.bar title="Filter Inventory" :action="route('products.index')" submit="" button="col-md-1">
-        <x-filters.text name="search" label="Search"
-                        placeholder="Name, SKU or supplier..." col="col-md-3" />
-
-        <x-filters.select name="category_id" label="Category" col="col-md-2"
-                          placeholder="All Categories" :options="$categories->pluck('name', 'id')" />
-
-        <x-filters.select name="brand_id" label="Brand" col="col-md-2"
-                          placeholder="All Brands" :options="$brands->pluck('name', 'id')" />
-
-        <x-filters.select name="supplier_id" label="Supplier" col="col-md-2"
-                          placeholder="All Suppliers" :options="$suppliers->pluck('name', 'id')" />
-
-        <x-filters.select name="status" label="Stock Status" col="col-md-2"
-                          placeholder="All Statuses" :options="App\Models\Product::STOCK_STATUSES" />
-
-        <x-filters.select name="sort" label="Sort by" col="col-md-2" :options="[
-                            'name'          => 'Name (A to Z)',
-                            'quantity'      => 'Quantity (most first)',
-                            'unit_price'    => 'Unit price (highest first)',
-                            'newest'        => 'Recently added',
-                          ]" />
-    </x-filters.bar>
+    {{-- ===== Filter Panel ===== --}}
+    <div class="card shadow-hover mb-4">
+        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Filter Inventory</h5>
+            <a href="{{ route('products.index') }}" class="btn btn-outline-light btn-sm">Reset filters</a>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ route('products.index') }}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Search</label>
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Name, SKU or supplier..." value="{{ request('search') }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Category</label>
+                    <select name="category_id" class="form-select">
+                        <option value="">All Categories</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}" @selected(request('category_id') == $category->id)>
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Brand</label>
+                    <select name="brand_id" class="form-select">
+                        <option value="">All Brands</option>
+                        @foreach($brands as $brand)
+                            <option value="{{ $brand->id }}" @selected(request('brand_id') == $brand->id)>
+                                {{ $brand->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Stock Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        @foreach(['In Stock', 'Low Stock', 'Out of Stock'] as $st)
+                            <option value="{{ $st }}" @selected(request('status') === $st)>{{ $st }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex gap-2">
+                    <button class="btn btn-primary flex-grow-1" type="submit"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     {{-- ===== Product table ===== --}}
     <div class="card shadow-hover mb-4">
         <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h5 class="mb-0">{{ request('trashed') ? 'Deleted Products' : 'All Products' }}</h5>
+            <h5 class="mb-0">All Products</h5>
             <div class="d-flex gap-2 align-items-center">
                 <span class="badge bg-light text-dark">{{ $products->total() }} item{{ $products->total() !== 1 ? 's' : '' }}</span>
-                @if (Auth::user()->is_admin)
-                    @if (request('trashed'))
-                        <a href="{{ route('products.index') }}" class="btn btn-outline-light btn-sm">
-                            <i class="bi bi-arrow-left me-1"></i>All products
-                        </a>
-                    @else
-                        <a href="{{ route('products.index', ['trashed' => 1]) }}" class="btn btn-outline-light btn-sm">
-                            <i class="bi bi-archive me-1"></i>Deleted
-                        </a>
-                    @endif
-                @endif
                 <a href="{{ route('reports.index') }}" class="btn btn-success btn-sm">
                     <i class="bi bi-file-earmark-bar-graph me-1"></i>Reports
                 </a>
@@ -89,44 +104,29 @@
                                 <td class="text-end">{{ $product->reorder_level }}</td>
                                 <td class="text-end">{{ 'PHP ' . number_format((float) $product->unit_price, 2) }}</td>
                                 <td class="text-end">{{ 'PHP ' . number_format($product->stockValue(), 2) }}</td>
-                                <td>
-                                    <span class="badge {{ $product->statusBadgeClass() }}">{{ $product->stockStatus() }}</span>
-                                    @if ($product->trashed())
-                                        <span class="badge bg-secondary ms-1">Deleted</span>
-                                    @endif
-                                </td>
+                                <td><span class="badge {{ $product->statusBadgeClass() }}">{{ $product->stockStatus() }}</span></td>
                                 <td class="text-nowrap">
-                                    @if ($product->trashed())
-                                        {{-- Soft-deleted: restore, or erase for good (removes its ledger too). --}}
-                                        <form action="{{ route('products.restore', $product) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('PUT')
-                                            <button class="btn btn-sm btn-success" title="Restore">
-                                                <i class="bi bi-arrow-counterclockwise"></i>
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('products.destroy', $product) }}" method="POST" class="d-inline"
-                                              onsubmit="return confirm('Permanently erase {{ $product->name }} AND its {{ $product->transactions()->count() }} stock movement(s)? This cannot be undone.');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="btn btn-sm btn-danger" title="Delete permanently">
-                                                <i class="bi bi-x-octagon"></i>
-                                            </button>
-                                        </form>
-                                    @else
-                                        <a href="{{ route('products.show', $product) }}" class="btn btn-sm btn-info text-white" title="View">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="{{ route('products.edit', $product) }}" class="btn btn-sm btn-warning" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form action="{{ route('products.destroy', $product) }}" method="POST" class="d-inline"
-                                              onsubmit="return confirm('Delete {{ $product->name }}? Its stock movements are kept for the reports, and an admin can restore the product.');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="btn btn-sm btn-danger" title="Delete"><i class="bi bi-trash"></i></button>
-                                        </form>
-                                    @endif
+                                    <a href="{{ route('products.show', $product) }}" class="btn btn-sm btn-info text-white" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ route('products.edit', $product) }}" class="btn btn-sm btn-warning" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                      <span class="badge {{ $product->activeBadgeClass() }} align-middle">{{ $product->activeLabel() }}</span>
+                                      @if(auth()->user()->canManageStock())
+                                          @if($product->quantity <= 0)
+                                              <form method="POST" action="{{ route('products.deactivate', $product) }}" class="d-inline">
+                                                  @csrf @method('PATCH')
+                                                  <button class="btn btn-sm btn-outline-secondary" type="submit">{{ $product->is_active ? 'Deactivate' : 'Activate' }}</button>
+                                              </form>
+                                          @endif
+                                          @unless($product->is_active)
+                                              <form method="POST" action="{{ route('products.destroy', $product) }}" class="d-inline" onsubmit="return confirm('Move this inactive product to Trash? Its transaction history will be preserved.');">
+                                                  @csrf @method('DELETE')
+                                                  <button class="btn btn-sm btn-outline-danger" type="submit" title="Move to Trash"><i class="bi bi-trash"></i></button>
+                                              </form>
+                                          @endunless
+                                      @endif
                                 </td>
                             </tr>
                         @empty

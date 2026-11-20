@@ -28,14 +28,6 @@
                 </div>
             </div>
 
-            <div class="card shadow-hover mb-4">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0">Delete Account</h5>
-                </div>
-                <div class="card-body">
-                    @include('profile.partials.delete-user-form')
-                </div>
-            </div>
         </div>
     </div>
 

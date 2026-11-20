@@ -7,6 +7,7 @@ use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\User;
 use App\Notifications\LowStockNotification;
+use App\Notifications\TransactionRecordedNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -20,11 +21,14 @@ class InventoryTransactionObserver
      */
     public function creating(InventoryTransaction $transaction): void
     {
+        $product = Product::whereKey($transaction->product_id)->lockForUpdate()->firstOrFail();
+
+        $transaction->quantity_before = (int) $product->quantity;
+        $transaction->quantity_after = (int) $product->quantity + $transaction->signedQuantity();
+
         if ($transaction->signedQuantity() >= 0) {
             return; // stock-in and upward adjustments can never go negative
         }
-
-        $product = Product::whereKey($transaction->product_id)->lockForUpdate()->firstOrFail();
 
         if ($product->quantity + $transaction->signedQuantity() < 0) {
             throw new InsufficientStockException(sprintf(
@@ -44,11 +48,13 @@ class InventoryTransactionObserver
     public function created(InventoryTransaction $transaction): void
     {
         DB::transaction(function () use ($transaction) {
-            $product = $transaction->product()->firstOrFail();
-            $delta   = $transaction->signedQuantity();
+            // Resolve the related model explicitly so static analysis knows
+            // this is a Product (the relation's inferred type can be stdClass).
+            $product = Product::withTrashed()->findOrFail($transaction->product_id);
+            $delta = $transaction->signedQuantity();
 
-            $before = (int) $product->quantity;
-            $after  = $before + $delta;
+            $before = $transaction->quantity_before ?? (int) $product->quantity;
+            $after = $transaction->quantity_after ?? ($before + $delta);
 
             if ($after < 0) {
                 throw new InsufficientStockException(sprintf(
@@ -61,24 +67,24 @@ class InventoryTransactionObserver
 
             // Increment through the relation: writes straight to MySQL, so a
             // stale in-memory copy can never clobber a concurrent movement.
-            $transaction->product()->increment('quantity', $delta);
+            $transaction->product()->update(['quantity' => $after]);
             $product->refresh();
 
             // Part 6 Step 3 — after a stock-OUT (or negative adjustment) check
             // whether the product is now at or below its reorder level.
-            // Duplicate suppression: an admin who already has an UNREAD alert
-            // for this product is skipped; once they read it (or the product
-            // is refilled and drops again) a new alert can be raised.
-            if ($delta < 0 && $product->isLowStock()) {
-                $recipients = User::admins()->get()->reject(
-                    fn (User $admin) => $admin->unreadNotifications->contains(
-                        fn ($n) => ($n->data['product_id'] ?? null) === $product->id
-                    )
-                );
-
-                if ($recipients->isNotEmpty()) {
-                    Notification::send($recipients, new LowStockNotification($product));
-                }
+            if ($delta < 0) {
+                self::alertAdminsIfLow($product);
+            }
+            $actor = $transaction->user;
+            if ($actor?->isStaff()) {
+                DB::afterCommit(function () use ($transaction) {
+                    try {
+                        $transaction->loadMissing(['user', 'product']);
+                        Notification::send(User::admins()->get(), new TransactionRecordedNotification($transaction));
+                    } catch (\Throwable $e) {
+                        report($e);
+                    }
+                });
             }
         });
     }
@@ -90,10 +96,46 @@ class InventoryTransactionObserver
      */
     public function deleted(InventoryTransaction $transaction): void
     {
-        $product = $transaction->product()->first();
+        $product = Product::withTrashed()->find($transaction->product_id);
 
         if ($product) {
             $transaction->product()->decrement('quantity', $transaction->signedQuantity());
+
+            // From the other Lab 6 project: reversing a stock-in (or a return)
+            // lowers the stock, so the low-stock alert is checked here as well.
+            if ($transaction->signedQuantity() > 0) {
+                self::alertAdminsIfLow($product->refresh());
+            }
+        }
+    }
+
+    /**
+     * Sends the low-stock alert to the admins when the product is at or below
+     * its reorder level. Duplicate suppression: an admin who already has an
+     * UNREAD alert for this product is skipped; once they read it (or the
+     * product is refilled and drops again) a new alert can be raised.
+     */
+    public static function alertAdminsIfLow(Product $product): void
+    {
+        if (!$product->isLowStock()) {
+            return;
+        }
+
+        /** @var \Illuminate\Support\Collection<int, User> $recipients */
+        $recipients = User::query()->where(fn($q) => $q->where('role', 'admin')->orWhere('is_admin', true)->orWhere('role', 'staff'))->get()->reject(
+            fn(User $admin) => $admin->unreadNotifications->contains(
+                fn($n) => ($n->data['product_id'] ?? null) === $product->id
+            )
+        );
+
+        if ($recipients->isNotEmpty()) {
+            try {
+                foreach ($recipients as $recipient) {
+                    $recipient->notify(new LowStockNotification($product));
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
     }
 }

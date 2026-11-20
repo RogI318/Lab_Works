@@ -40,8 +40,9 @@
                                 </td>
                                 <td>{{ $user->email }}</td>
                                 <td>
-                                    {{-- Lab 7 Part 1: the four roles replace Admin/User. --}}
-                                    <span class="badge {{ $user->roleBadgeClass() }}">{{ $user->roleLabel() }}</span>
+                                    <span class="badge {{ $user->is_admin ? 'bg-primary' : 'bg-secondary' }}">
+                                        {{ $user->is_admin ? 'Admin' : 'Staff' }}
+                                    </span>
                                 </td>
                                 <td class="small text-muted">{{ $user->created_at?->format('M d, Y') }}</td>
                                 <td class="text-nowrap">
@@ -53,8 +54,8 @@
                                             data-bs-toggle="modal" data-bs-target="#user-edit-{{ $user->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    {{-- An admin can only view and edit their own account; no delete button on their own row. --}}
-                                    @unless ($user->is(auth()->user()))
+                                    {{-- Admin accounts (including your own) can't be deleted: no delete button on admin rows. --}}
+                                    @unless ($user->is_admin)
                                         <button type="button" class="btn btn-sm btn-danger" title="Delete"
                                                 data-bs-toggle="modal" data-bs-target="#user-delete-{{ $user->id }}">
                                             <i class="bi bi-trash"></i>
@@ -72,7 +73,10 @@
     </div>
 
     {{-- ===== Add User modal ===== --}}
-    @php $addOpened = old('modal_key') === 'user-add'; @endphp
+    @php
+        $addOpened = old('modal_key') === 'user-add';
+        $addRole = (string) ($addOpened ? old('role', '') : '');
+    @endphp
     <div class="modal fade" id="user-add" tabindex="-1" aria-labelledby="user-addLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0">
@@ -116,23 +120,20 @@
                                    class="form-control" autocomplete="new-password" required>
                         </div>
 
-                        {{-- Lab 7 Part 1 Step 2: role replaces the admin tick-box. --}}
                         <div class="mb-3">
-                            <label for="user-add-role" class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
-                            <select name="role" id="user-add-role"
-                                    class="form-select @if($addOpened) @error('role') is-invalid @enderror @endif">
-                                @foreach ($roles as $value => $label)
-                                    <option value="{{ $value }}"
-                                            @selected(old('modal_key') === 'user-add' ? old('role', 'staff') === $value : $value === 'staff')>
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @if($addOpened) @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
-                            <div class="form-text">
-                                Administrator and Manager handle suppliers and purchase orders;
-                                Warehouse Staff receives deliveries; Staff keeps the Lab 5/6 screens only.
+                            <span class="form-label fw-semibold d-block">Role</span>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="user-add-staff"
+                                       value="staff" @checked($addRole === 'staff') required>
+                                <label class="form-check-label" for="user-add-staff">Staff</label>
                             </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="user-add-admin"
+                                       value="admin" @checked($addRole === 'admin')>
+                                <label class="form-check-label" for="user-add-admin">Admin</label>
+                            </div>
+                            @if($addOpened) @error('role')<div class="text-danger small">{{ $message }}</div>@enderror @endif
+                            <div class="form-text">Staff can use inventory features. Admins can also manage users.</div>
                         </div>
                     </div>
 
@@ -150,6 +151,7 @@
             $isSelf     = $user->is(auth()->user());
             $editKey    = "user-edit-{$user->id}";
             $editOpened = old('modal_key') === $editKey;
+            $editRole   = (string) ($editOpened ? old('role', $user->is_admin ? 'admin' : 'staff') : ($user->is_admin ? 'admin' : 'staff'));
             $deleteKey  = "user-delete-{$user->id}";
             $viewKey    = "user-view-{$user->id}";
         @endphp
@@ -175,7 +177,9 @@
                                     <span class="badge bg-secondary ms-1">You</span>
                                 @endif
                             </h5>
-                            <span class="badge {{ $user->roleBadgeClass() }}">{{ $user->roleLabel() }}</span>
+                            <span class="badge {{ $user->is_admin ? 'bg-primary' : 'bg-secondary' }}">
+                                {{ $user->is_admin ? 'Admin' : 'Staff' }}
+                            </span>
                         </div>
 
                         <table class="table table-sm mb-0">
@@ -194,7 +198,7 @@
                                 </tr>
                                 <tr>
                                     <th class="text-muted fw-semibold">Role</th>
-                                    <td>{{ $user->roleLabel() }}</td>
+                                    <td>{{ $user->is_admin ? 'Admin (can manage users)' : 'Staff (inventory access)' }}</td>
                                 </tr>
                                 <tr>
                                     <th class="text-muted fw-semibold">Email Verified</th>
@@ -264,25 +268,25 @@
                                        class="form-control" autocomplete="new-password">
                             </div>
 
-                            {{-- Lab 7 Part 1 Step 2: role dropdown; own row is
-                                 locked so an admin cannot demote themselves. --}}
                             <div class="mb-3">
-                                <label for="{{ $editKey }}-role" class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
-                                <select name="role" id="{{ $editKey }}-role"
-                                        class="form-select @if($editOpened) @error('role') is-invalid @enderror @endif"
-                                        @disabled($isSelf)>
-                                    @foreach ($roles as $value => $label)
-                                        <option value="{{ $value }}"
-                                                @selected($editOpened ? old('role') === $value : $user->role === $value)>
-                                            {{ $label }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @if($editOpened) @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
-                                {{-- A disabled control posts nothing, so carry the real role. --}}
+                                <span class="form-label fw-semibold d-block">Role</span>
                                 @if ($isSelf)
-                                    <input type="hidden" name="role" value="{{ $user->role }}">
-                                    <div class="form-text">You can't change your own role.</div>
+                                    <input type="hidden" name="role" value="{{ $editRole }}">
+                                @endif
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="role" id="{{ $editKey }}-staff"
+                                           value="staff" @checked($editRole === 'staff') @disabled($isSelf) @if(!$isSelf) required @endif>
+                                    <label class="form-check-label" for="{{ $editKey }}-staff">Staff</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="role" id="{{ $editKey }}-admin"
+                                           value="admin" @checked($editRole === 'admin') @disabled($isSelf)>
+                                    <label class="form-check-label" for="{{ $editKey }}-admin">Admin</label>
+                                </div>
+                                @if($editOpened) @error('role')<div class="text-danger small">{{ $message }}</div>@enderror @endif
+                                <div class="form-text">Staff can use inventory features. Admins can also manage users.</div>
+                                @if ($isSelf)
+                                    <div class="form-text">You can't change your own admin role.</div>
                                 @endif
                             </div>
                         </div>
@@ -296,23 +300,16 @@
             </div>
         </div>
 
-        {{-- ===== Delete User modal ===== --}}
-        <div class="modal fade" id="{{ $deleteKey }}" tabindex="-1" aria-labelledby="{{ $deleteKey }}Label" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title" id="{{ $deleteKey }}Label"><i class="bi bi-exclamation-triangle-fill me-1"></i> Delete User</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
+        {{-- ===== Delete User modal (never rendered for admin accounts) ===== --}}
+        @unless ($user->is_admin)
+            <div class="modal fade" id="{{ $deleteKey }}" tabindex="-1" aria-labelledby="{{ $deleteKey }}Label" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title" id="{{ $deleteKey }}Label"><i class="bi bi-exclamation-triangle-fill me-1"></i> Delete User</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
 
-                    @if ($isSelf)
-                        <div class="modal-body">
-                            <div class="alert alert-warning mb-0">You can't delete your own account while you are logged in.</div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    @else
                         <form method="POST" action="{{ route('users.destroy', $user) }}">
                             @csrf
                             @method('DELETE')
@@ -324,10 +321,10 @@
                                 <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i> Yes, delete</button>
                             </div>
                         </form>
-                    @endif
+                    </div>
                 </div>
             </div>
-        </div>
+        @endunless
     @endforeach
 @endsection
 

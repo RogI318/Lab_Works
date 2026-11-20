@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Services;
+
+use Barryvdh\DomPDF\Facade\Pdf;
+
+class PdfService
+{
+    public static function available(): bool
+    {
+        return class_exists(Pdf::class);
+    }
+
+    public static function output(string $view, array $data = [], string $orientation = 'portrait'): string
+    {
+        return Pdf::loadView($view, $data)->setPaper('a4', $orientation)->output();
+    }
+
+    public static function download(string $view, array $data, string $filename, string $orientation = 'portrait')
+    {
+        return Pdf::loadView($view, $data)->setPaper('a4', $orientation)->download($filename);
+    }
+}

@@ -21,6 +21,7 @@ class BrandController extends Controller
 
     public function store(Request $request)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         $brand = Brand::create($request->validate($this->rules(), $this->messages()));
 
         // Submitted from the "+" button beside the Brand dropdown on a product form.
@@ -39,6 +40,7 @@ class BrandController extends Controller
 
     public function update(Request $request, Brand $brand)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         $brand->update($request->validate($this->rules($brand->id), $this->messages()));
 
         return redirect()
@@ -48,6 +50,7 @@ class BrandController extends Controller
 
     public function destroy(Brand $brand)
     {
+        abort_unless(auth()->user()->canManageStock(), 403);
         if ($count = $brand->products()->count()) {
             return back()->with(
                 'error',

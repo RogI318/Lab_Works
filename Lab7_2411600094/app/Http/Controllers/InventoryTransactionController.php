@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Exceptions\InsufficientStockException;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
-use App\Models\User;
-use App\Services\SearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -19,12 +17,16 @@ use Illuminate\Validation\Rule;
 class InventoryTransactionController extends Controller
 {
     /** Step 2 — index: 20 per page, eager loaded, filterable. */
-    public function index(Request $request, SearchService $search)
+    public function index(Request $request)
     {
-        // Lab 7 Part 7: the same four filters as before, plus who recorded the
-        // movement and a reference number, all built by SearchService. The
-        // ledger keeps its own order and its own page size.
-        $transactions = $search->searchTransactions($request->all())
+        $transactions = InventoryTransaction::query()
+            ->with(['product', 'user'])
+            ->when($request->product_id, fn ($q, $id) => $q->where('product_id', $id))
+            ->when($request->type, fn ($q, $type) => $q->where('type', $type))
+            ->when($request->date_from, fn ($q, $date) => $q->whereDate('created_at', '>=', $date))
+            ->when($request->date_to, fn ($q, $date) => $q->whereDate('created_at', '<=', $date))
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
 
@@ -34,32 +36,32 @@ class InventoryTransactionController extends Controller
             // modal (included in the same page) also reads quantity/reorder level.
             'products'     => Product::orderBy('name')
                 ->get(['id', 'name', 'sku', 'quantity', 'reorder_level']),
-            'users'        => User::orderBy('name')->get(['id', 'name']),
             'reasons'      => InventoryTransaction::REASONS,
         ]);
     }
 
     /** Step 2 — create form: pass products and the transaction types. */
-    public function create()
+    public function create(Request $request)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         return view('transactions.create', [
             // stock_status / stock_status_color are appended so the JavaScript
             // stock hint on the form can read them straight from the page.
             'products' => Product::orderBy('name')
                 ->get(['id', 'name', 'sku', 'quantity', 'reorder_level'])
                 ->append('stock_status', 'stock_status_color'),
-            // Manual ledger entries are in/out only; 'adjustment' rows come
-            // from the dedicated Part 8 stock-adjustment feature.
-            'types'    => [
-                InventoryTransaction::TYPE_IN  => 'Stock In',
-                InventoryTransaction::TYPE_OUT => 'Stock Out',
-            ],
+            // Manual ledger entries: in/out plus Return and Damage; 'adjustment'
+            // rows come from the dedicated Part 8 stock-adjustment feature.
+            'types'    => $this->typeOptions(),
+            // "+ Transaction" on a product page opens this form with it preselected.
+            'selectedProductId' => $request->integer('product_id') ?: null,
         ]);
     }
 
     /** Step 2 + Step 3 — validate, then let the observer move the stock. */
     public function store(Request $request)
     {
+        abort_unless($request->user()->canManageStock(), 403);
         $validated = $this->makeValidator($request)->validate();
 
         $product = Product::findOrFail($validated['product_id']);
@@ -131,10 +133,10 @@ class InventoryTransactionController extends Controller
             'notes'            => ['nullable', 'string', 'max:1000'],
         ], [
             'product_id.exists' => 'The selected product no longer exists.',
-            'type.in'           => 'Choose either Stock In or Stock Out.',
+            'type.in'           => 'Choose Stock In, Stock Out, Return or Damage.',
             'quantity.min'      => 'Quantity must be at least 1.',
         ])->after(function ($validator) use ($request) {
-            if ($request->input('type') !== InventoryTransaction::TYPE_OUT) {
+            if (! in_array($request->input('type'), [InventoryTransaction::TYPE_OUT, InventoryTransaction::TYPE_DAMAGE], true)) {
                 return;
             }
 
@@ -154,8 +156,10 @@ class InventoryTransactionController extends Controller
     private function typeOptions(): array
     {
         return [
-            InventoryTransaction::TYPE_IN  => 'Stock In',
-            InventoryTransaction::TYPE_OUT => 'Stock Out',
+            InventoryTransaction::TYPE_IN     => 'Stock In',
+            InventoryTransaction::TYPE_OUT    => 'Stock Out',
+            InventoryTransaction::TYPE_RETURN => 'Return',
+            InventoryTransaction::TYPE_DAMAGE => 'Damage',
         ];
     }
 }

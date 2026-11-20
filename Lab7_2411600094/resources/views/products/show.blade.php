@@ -13,12 +13,10 @@
             <a href="{{ route('products.edit', $product) }}" class="btn btn-warning">
                 <i class="bi bi-pencil me-1"></i> Edit
             </a>
-            <form action="{{ route('products.destroy', $product) }}" method="POST"
-                  onsubmit="return confirm('Delete {{ $product->name }}? Its stock movements will also be removed.');">
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-danger"><i class="bi bi-trash me-1"></i> Delete</button>
-            </form>
+            <span class="badge {{ $product->activeBadgeClass() }} fs-6 align-self-center"
+                  title="{{ $product->isActive() ? 'In the catalog and available' : 'Out of stock: becomes Active again when restocked' }}">
+                {{ $product->activeLabel() }}
+            </span>
         </div>
     </div>
 
@@ -41,27 +39,8 @@
                         <dt class="col-sm-4">Brand</dt>
                         <dd class="col-sm-8">{{ $product->brand->name }}</dd>
 
-                        {{-- Lab 7 Part 1: the supplier relationship, not the old free text. --}}
                         <dt class="col-sm-4">Supplier</dt>
-                        <dd class="col-sm-8">
-                            @if($product->primarySupplier)
-                                <a href="{{ route('suppliers.show', $product->primarySupplier) }}">
-                                    {{ $product->supplier_name }}
-                                </a>
-                                <span class="badge {{ $product->primarySupplier->statusBadgeClass() }} ms-1">
-                                    {{ $product->primarySupplier->is_active ? 'Active' : 'Inactive' }}
-                                </span>
-                            @else
-                                <span class="text-muted">Not recorded</span>
-                            @endif
-                        </dd>
-
-                        @if($product->suppliers->count() > 1)
-                            <dt class="col-sm-4">Also supplied by</dt>
-                            <dd class="col-sm-8 small">
-                                {{ $product->suppliers->where('id', '!=', $product->supplier_id)->pluck('name')->implode(', ') }}
-                            </dd>
-                        @endif
+                        <dd class="col-sm-8">{{ $product->supplier ?? 'Not recorded' }}</dd>
 
                         <dt class="col-sm-4">Quantity in Stock</dt>
                         <dd class="col-sm-8 fw-bold {{ $product->needsReorder() ? 'text-danger' : 'text-success' }}">
@@ -101,13 +80,13 @@
                     </p>
                     <hr>
                     <p class="mb-0 small">
-                        Supplier on file: {{ $product->supplier_name !== '' ? $product->supplier_name : 'none recorded' }}.
+                        Supplier on file: {{ $product->supplier ?? 'none recorded' }}.
                     </p>
                 </div>
             @else
                 <div class="alert alert-success shadow-hover">
                     <h5 class="alert-heading"><i class="bi bi-check-circle-fill me-1"></i>Healthy stock level</h5>
-                    <p class="mb-0">{{ number_format($product->quantity - $product->reorder_level) }} unit(s) above the reorder point.</p>
+                    <p class="mb-0">{{ number_format($product->quantity - $product->reorder_level) }} unit(s) above the low stock level.</p>
                 </div>
             @endif
 
@@ -155,6 +134,9 @@
                 @if (request('date_from') || request('date_to'))
                     <a href="{{ route('products.show', $product) }}" class="btn btn-sm btn-outline-light text-nowrap">Reset</a>
                 @endif
+                <a href="{{ route('transactions.create', ['product_id' => $product->id]) }}" class="btn btn-sm btn-outline-light text-nowrap">
+                    <i class="bi bi-plus-lg me-1"></i> Transaction
+                </a>
             </form>
         </div>
         <div class="card-body">
@@ -164,8 +146,8 @@
                         <tr>
                             <th>Date</th>
                             <th>Type</th>
-                            <th class="text-end">Quantity</th>
-                            <th class="text-end">Balance after</th>
+                            <th class="text-end pe-4">Quantity</th>
+                            <th class="ps-4">Before → After</th>
                             <th class="ps-4">Reference</th>
                             <th>Handled by</th>
                         </tr>
@@ -185,10 +167,10 @@
                                         <div class="small text-muted">{{ $transaction->reasonLabel() }}</div>
                                     @endif
                                 </td>
-                                <td class="text-end fw-bold {{ $transaction->signedQuantity() >= 0 ? 'text-success' : 'text-danger' }}">
+                                <td class="text-end pe-4 fw-bold {{ $transaction->signedQuantity() >= 0 ? 'text-success' : 'text-danger' }}">
                                     {{ $transaction->signedQuantity() > 0 ? '+' : '' }}{{ number_format($transaction->signedQuantity()) }}
                                 </td>
-                                <td class="text-end fw-semibold">{{ number_format($transaction->balance_after) }}</td>
+                                <td class="ps-4 text-nowrap">{{ $transaction->quantity_before ?? ($transaction->balance_after - $transaction->signedQuantity()) }} → {{ $transaction->quantity_after ?? $transaction->balance_after }}</td>
                                 <td class="ps-4 text-nowrap"><code>{{ $transaction->reference_number ?: 'n/a' }}</code></td>
                                 <td>{{ $transaction->user->name ?? 'System' }}</td>
                             </tr>

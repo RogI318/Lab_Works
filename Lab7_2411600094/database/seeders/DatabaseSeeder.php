@@ -22,19 +22,11 @@ class DatabaseSeeder extends Seeder
         );
 
         // Brands and categories must exist before the products that reference them.
-        // Lab 7 Part 1: SupplierSeeder sits between the two — the suppliers it
-        // creates have to exist before ProductSeeder assigns a primary supplier,
-        // and it also backfills supplier_id for products that are already in the
-        // table from Lab 5/6.
         $this->call([
             CategorySeeder::class,
             BrandSeeder::class,
-            SupplierSeeder::class,
             ProductSeeder::class,
-            // Lab 7 Part 2: the role accounts first, because the demo purchase
-            // orders attribute approval and receipt to those users.
-            ProcurementUserSeeder::class,
-            PurchaseOrderSeeder::class,
+            SupplierSeeder::class,
         ]);
     }
 }

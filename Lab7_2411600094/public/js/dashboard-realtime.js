@@ -1,11 +1,8 @@
 /*
- * Lab 6 Part 7 Step 3 — AJAX polling for the dashboard (30s).
+ * AJAX polling for the dashboard (30s).
  * Module pattern: one object owns the interval, fetches the three API
  * endpoints, animates changed numbers, rebuilds the alert + movement
  * lists, and reports staleness without ever breaking the page.
- *
- * Lab 7 Part 5 Step 4 — the same tick also repaints the four procurement
- * widgets, each from its own endpoint and with its own failure handling.
  */
 (function () {
     'use strict';
@@ -15,22 +12,16 @@
 
     const INTERVAL_MS = cfg.intervalMs || 30000;
 
-    // Lab 7 Part 5 Step 4: the procurement widgets ride this same timer. The
-    // dashboard only prints the config for people who pass
-    // @can('view-procurement'), so staff have nothing to poll and this stays
-    // null instead of asking for JSON the gate would refuse.
-    const procurement = window.LAB7_PROCUREMENT || null;
-
     const els = {
-        products:  document.getElementById('statProducts'),
-        low:       document.getElementById('statLowStock'),
-        out:       document.getElementById('statOutOfStock'),
-        value:     document.getElementById('statValue'),
-        alerts:    document.getElementById('alertsList'),
-        moves:     document.getElementById('recentMovesBody'),
-        updated:   document.getElementById('lastUpdated'),
-        status:    document.getElementById('liveStatus'),
-        badge:     document.getElementById('notifBadge'),
+        products: document.getElementById('statProducts'),
+        low: document.getElementById('statLowStock'),
+        out: document.getElementById('statOutOfStock'),
+        value: document.getElementById('statValue'),
+        alerts: document.getElementById('alertsList'),
+        moves: document.getElementById('recentMovesBody'),
+        updated: document.getElementById('lastUpdated'),
+        status: document.getElementById('liveStatus'),
+        badge: document.getElementById('notifBadge'),
     };
 
     function setStatus(text, className) {
@@ -195,230 +186,5 @@
         }
     }
 
-    /* ==================================================================
-       Lab 7 Part 5 Step 4 — the four procurement widgets.
-
-       Same contract as renderAlerts/renderMoves above: the JSON is flat and
-       small, the browser rebuilds the widget from it, and every node is created
-       with createElement and filled through textContent, so a supplier named
-       "<script>" stays a name. Nothing here runs for staff.
-       ================================================================== */
-
-    function el(tag, className, text) {
-        const node = document.createElement(tag);
-        if (className) node.className = className;
-        if (text !== undefined && text !== null) node.textContent = String(text);
-        return node;
-    }
-
-    function codeLink(text, href) {
-        const a = link('', href, 'text-decoration-none');
-        a.appendChild(el('code', '', text));
-        return a;
-    }
-
-    function money(value) {
-        return Number(value).toLocaleString('en-US', {
-            minimumFractionDigits: 2, maximumFractionDigits: 2,
-        });
-    }
-
-    // The card body the composer rendered — the one place each widget's
-    // repaintable markup lives, marked with data-widget-body in Blade.
-    function widgetBody(name) {
-        const card = document.querySelector(`[data-widget="${name}"]`);
-        return card ? card.querySelector('[data-widget-body]') : null;
-    }
-
-    function emptyRow(body, colspan, text) {
-        const tr = el('tr');
-        const td = el('td', 'text-center text-muted py-3', text);
-        td.colSpan = colspan;
-        tr.appendChild(td);
-        body.appendChild(tr);
-    }
-
-    function renderPending(payload) {
-        const body = widgetBody('pending-orders');
-        if (!body) return;
-        const d = payload.data;
-        body.textContent = '';
-
-        if (!d.count) {
-            const box = el('div', 'text-center text-muted py-4');
-            box.appendChild(el('i', 'bi bi-check2-circle d-block mb-2 fs-3'));
-            box.appendChild(el('div', '', 'Nothing is waiting for a signature.'));
-            body.appendChild(box);
-            return;
-        }
-
-        const left = el('div');
-        const count = el('div', 'display-6 fw-bold text-primary lh-1', d.count);
-        count.id = 'pendingCount';
-        left.appendChild(count);
-        left.appendChild(el('div', 'small text-muted', 'order(s) awaiting approval'));
-
-        const right = el('div', 'text-end');
-        const value = el('div', 'h4 fw-bold text-success mb-0', money(d.value));
-        value.id = 'pendingValue';
-        right.appendChild(value);
-        right.appendChild(el('div', 'small text-muted', 'PHP committed'));
-
-        const wrap = el('div', 'd-flex justify-content-between align-items-center flex-wrap gap-3');
-        wrap.append(left, right);
-        body.appendChild(wrap);
-    }
-
-    function renderRecentOrders(payload) {
-        const body = widgetBody('recent-orders');
-        if (!body) return;
-        body.textContent = '';
-
-        if (!payload.data.length) {
-            emptyRow(body, 4, 'No purchase orders yet.');
-            return;
-        }
-
-        payload.data.forEach((o) => {
-            const ref = el('td');
-            ref.appendChild(codeLink(o.reference, o.url));
-            ref.appendChild(document.createElement('br'));
-            ref.appendChild(el('small', 'text-muted',
-                o.order_date + (o.is_auto_generated ? ' - auto-generated' : '')));
-
-            const badge = el('span', 'badge ' + o.badge_class, o.status_label);
-            const status = el('td');
-            status.appendChild(badge);
-
-            const tr = el('tr');
-            tr.append(
-                ref,
-                el('td', 'small', o.supplier),
-                status,
-                el('td', 'text-end', money(o.total)),
-            );
-            body.appendChild(tr);
-        });
-    }
-
-    function renderSupplierPerformance(payload) {
-        const body = widgetBody('supplier-performance');
-        if (!body) return;
-        body.textContent = '';
-
-        if (!payload.data.length) {
-            const li = el('li', 'text-center text-muted py-3');
-            li.appendChild(el('i', 'bi bi-clock-history d-block mb-2 fs-3'));
-            li.appendChild(el('div', '', 'Nothing has been received yet, so there is no delivery history to score.'));
-            body.appendChild(li);
-            return;
-        }
-
-        payload.data.forEach((s) => {
-            const head = el('div', 'd-flex justify-content-between align-items-baseline small');
-            head.appendChild(link(s.name, s.url, 'text-decoration-none fw-semibold'));
-            head.appendChild(el('span', 'text-muted', `${s.percent.toFixed(1)} % (${s.on_time}/${s.received})`));
-
-            const track = el('div', 'progress');
-            track.setAttribute('role', 'progressbar');
-            track.style.height = '8px';
-            const bar = el('div', 'progress-bar ' + s.bar_class);
-            bar.style.width = Math.min(100, s.percent) + '%';
-            track.appendChild(bar);
-
-            const li = el('li', 'mb-3');
-            li.append(head, track);
-            body.appendChild(li);
-        });
-    }
-
-    function renderReorderAlerts(payload) {
-        const body = widgetBody('reorder-alerts');
-        if (!body) return;
-        body.textContent = '';
-
-        if (!payload.data.length) {
-            emptyRow(body, 5, 'Every item is above its reorder point.');
-            return;
-        }
-
-        payload.data.forEach((p) => {
-            const name = el('td');
-            name.appendChild(link(p.name, p.url, 'text-decoration-none'));
-            name.appendChild(document.createElement('br'));
-            const sku = el('small', 'text-muted');
-            sku.appendChild(el('code', '', p.sku));
-            name.appendChild(sku);
-
-            const suggested = el('td', 'text-end');
-            suggested.appendChild(p.suggested > 0
-                ? el('span', 'badge bg-primary', p.suggested)
-                : el('span', 'badge bg-secondary', 'covered'));
-
-            const tr = el('tr');
-            tr.append(
-                name,
-                el('td', 'text-end' + (p.on_hand <= 0 ? ' text-danger fw-bold' : ''), p.on_hand),
-                el('td', 'text-end text-muted', p.point),
-                suggested,
-                el('td', 'small', p.supplier),
-            );
-            body.appendChild(tr);
-        });
-    }
-
-    const widgetRenderers = {
-        'pending-orders': renderPending,
-        'recent-orders': renderRecentOrders,
-        'supplier-performance': renderSupplierPerformance,
-        'reorder-alerts': renderReorderAlerts,
-    };
-
-    // Last payload per widget, so a poll that changes nothing repaints nothing:
-    // the cards stop flashing every thirty seconds whether or not the numbers
-    // moved, and an item nobody touched stays exactly where it was.
-    const lastWidgets = {};
-
-    async function refreshWidgets() {
-        const names = Object.keys(widgetRenderers);
-        const settled = await Promise.allSettled(
-            names.map((name) => getJson(procurement.endpoints[name]).then((payload) => ({ name, payload })))
-        );
-
-        let repainted = false;
-
-        settled.forEach((result) => {
-            if (result.status !== 'fulfilled') {
-                // One widget whose endpoint is down is not a reason to stop
-                // polling the other three, and not a reason to alarm the user:
-                // their page still shows the last good render of that card.
-                console.warn('Procurement widget polling failed:', result.reason);
-                return;
-            }
-
-            const { name, payload } = result.value;
-            const fingerprint = JSON.stringify(payload.data);
-            if (lastWidgets[name] === fingerprint) return;
-            lastWidgets[name] = fingerprint;
-
-            widgetRenderers[name](payload);
-            const body = widgetBody(name);
-            if (body) {
-                body.classList.remove('stat-flash');
-                void body.offsetWidth;
-                body.classList.add('stat-flash');
-            }
-            repainted = true;
-        });
-
-        if (repainted) {
-            const stamp = document.getElementById('procurementUpdated');
-            if (stamp) stamp.textContent = 'Updated ' + new Date().toLocaleTimeString();
-        }
-    }
-
-    setInterval(() => {
-        refresh();
-        if (procurement) refreshWidgets();
-    }, INTERVAL_MS);
+    setInterval(refresh, INTERVAL_MS);
 })();

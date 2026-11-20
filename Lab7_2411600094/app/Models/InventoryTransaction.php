@@ -3,38 +3,73 @@
 namespace App\Models;
 
 use App\Observers\InventoryTransactionObserver;
-use App\Support\SqlLike;
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[ObservedBy(InventoryTransactionObserver::class)]
 class InventoryTransaction extends Model
 {
-    public const TYPE_IN  = 'in';
+    use Auditable;
+    public const TYPE_IN = 'in';
     public const TYPE_OUT = 'out';
 
     /** quantity is the signed difference (physical - system) */
     public const TYPE_ADJUSTMENT = 'adjustment';
 
-    public const TYPES = [self::TYPE_IN, self::TYPE_OUT, self::TYPE_ADJUSTMENT];
+    /** From Lab 6 (2411600101): a customer return adds stock back, damaged goods take it out. */
+    public const TYPE_RETURN = 'return';
+    public const TYPE_DAMAGE = 'damage';
+
+    public const TYPES = [
+        self::TYPE_IN,
+        self::TYPE_OUT,
+        self::TYPE_ADJUSTMENT,
+        self::TYPE_RETURN,
+        self::TYPE_DAMAGE,
+    ];
+
+    public function auditLabel(): string
+    {
+        $this->loadMissing(['user', 'product']);
+        return sprintf(
+            '%s recorded %s of %s unit(s) for %s; stock %s → %s%s',
+            $this->user?->name ?? 'Unknown user',
+            $this->typeLabel(),
+            abs($this->signedQuantity()),
+            $this->product?->name ?? 'Deleted product',
+            $this->quantity_before ?? '?',
+            $this->quantity_after ?? '?',
+            $this->reference_number ? '; reference ' . $this->reference_number : ''
+        );
+    }
 
     /** the causes the adjustment form offers. */
     public const REASONS = [
         'count_discrepancy' => 'Physical count discrepancy',
-        'damaged'           => 'Damaged goods',
-        'theft_loss'        => 'Theft / loss',
-        'system_error'      => 'System error',
-        'other'             => 'Other (explain in notes)',
+        'damaged' => 'Damaged goods',
+        'theft_loss' => 'Theft / loss',
+        'system_error' => 'System error',
+        'other' => 'Other (explain in notes)',
     ];
 
     protected $fillable = [
-        'product_id', 'type', 'quantity', 'reference_number', 'notes', 'reason', 'user_id',
+        'product_id',
+        'type',
+        'quantity',
+        'reference_number',
+        'notes',
+        'reason',
+        'user_id',
+        'quantity_before',
+        'quantity_after',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
+        'quantity_before' => 'integer',
+        'quantity_after' => 'integer',
     ];
 
     /* ---------- Query scopes (Part 1, Step 4) ---------- */
@@ -58,46 +93,6 @@ class InventoryTransaction extends Model
         return $query->latest('created_at');
     }
 
-    /* ---------- Query scopes (Lab 7 Part 7 Step 2) ---------- */
-
-    /** A Product model or its id; null means "every product". */
-    public function scopeForProduct(Builder $query, Product|int|null $product): Builder
-    {
-        $id = $product instanceof Product ? $product->id : $product;
-
-        return $query->when($id, fn (Builder $q) => $q->where('product_id', (int) $id));
-    }
-
-    /** One of in / out / adjustment; anything else leaves the set untouched. */
-    public function scopeOfType(Builder $query, ?string $type): Builder
-    {
-        return in_array($type, self::TYPES, true)
-            ? $query->where('type', $type)
-            : $query;
-    }
-
-    /** Who recorded the movement. */
-    public function scopeByUser(Builder $query, User|int|null $user): Builder
-    {
-        $id = $user instanceof User ? $user->id : $user;
-
-        return $query->when($id, fn (Builder $q) => $q->where('user_id', (int) $id));
-    }
-
-    /** The ledger is stamped by created_at, and both days count. */
-    public function scopeBetweenDates(Builder $query, ?string $from, ?string $to): Builder
-    {
-        return $query
-            ->when($from, fn (Builder $q) => $q->whereDate('created_at', '>=', $from))
-            ->when($to,   fn (Builder $q) => $q->whereDate('created_at', '<=', $to));
-    }
-
-    /** Delivery note / invoice / PO reference as printed on the paper. */
-    public function scopeWithReference(Builder $query, ?string $reference): Builder
-    {
-        return SqlLike::any($query, ['reference_number'], $reference);
-    }
-
     /*  Relationships  */
     /**
      * Ledger rows keep resolving their product even after it is soft-deleted:
@@ -119,6 +114,12 @@ class InventoryTransaction extends Model
         return $this->type === self::TYPE_IN;
     }
 
+    /** True for the two movement types that take stock out (Stock Out, Damage). */
+    public function isOutgoing(): bool
+    {
+        return in_array($this->type, [self::TYPE_OUT, self::TYPE_DAMAGE], true);
+    }
+
     public function isAdjustment(): bool
     {
         return $this->type === self::TYPE_ADJUSTMENT;
@@ -132,27 +133,29 @@ class InventoryTransaction extends Model
     public function signedQuantity(): int
     {
         return match ($this->type) {
-            self::TYPE_IN  => abs($this->quantity),
-            self::TYPE_OUT => -abs($this->quantity),
-            default        => (int) $this->quantity,
+            self::TYPE_IN, self::TYPE_RETURN => abs($this->quantity),
+            self::TYPE_OUT, self::TYPE_DAMAGE => -abs($this->quantity),
+            default => (int) $this->quantity,
         };
     }
 
     public function typeLabel(): string
     {
         return match ($this->type) {
-            self::TYPE_IN         => 'Stock In',
-            self::TYPE_OUT        => 'Stock Out',
-            default               => 'Adjustment',
+            self::TYPE_IN => 'Stock In',
+            self::TYPE_OUT => 'Stock Out',
+            self::TYPE_RETURN => 'Return',
+            self::TYPE_DAMAGE => 'Damage',
+            default => 'Adjustment',
         };
     }
 
     public function typeBadgeClass(): string
     {
         return match ($this->type) {
-            self::TYPE_IN         => 'bg-success',
-            self::TYPE_OUT        => 'bg-danger',
-            default               => 'bg-info text-dark',
+            self::TYPE_IN, self::TYPE_RETURN => 'bg-success',
+            self::TYPE_OUT, self::TYPE_DAMAGE => 'bg-danger',
+            default => 'bg-info text-dark',
         };
     }
 

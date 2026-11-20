@@ -13,7 +13,7 @@ class AdminOnly
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user() || ! $request->user()->is_admin) {
+        if (!$request->user() || !$request->user()->isAdmin()) {
             abort(403, 'Only administrators can manage users.');
         }
 

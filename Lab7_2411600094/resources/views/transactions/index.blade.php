@@ -4,13 +4,13 @@
 
 @section('content')
 
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-        <h2 class="fw-bold">Inventory Transactions</h2>
-        <div class="btn-toolbar gap-2">
+    <div class="d-flex flex-wrap align-items-center gap-3 pb-2 mb-3 border-bottom">
+        <h2 class="fw-bold mb-0 me-auto">Inventory Transactions</h2>
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 ms-auto">
             <a href="{{ route('transactions.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-1"></i> New Transaction
             </a>
-            @if (Auth::user()->is_admin)
+            @if (Auth::user()->canManageStock())
                 {{-- Part 8: the cycle-count form opens right here, no separate page. --}}
                 <button type="button" class="btn btn-outline-primary"
                         data-bs-toggle="modal" data-bs-target="#adjustment-add">
@@ -20,28 +20,52 @@
         </div>
     </div>
 
-    {{-- ===== Filter Panel (Lab 6 Part 3 filters + Lab 7 Part 7: user, reference) ===== --}}
-    <x-filters.bar title="Filter Transactions" :action="route('transactions.index')" submit="Apply">
-        <x-filters.select name="product_id" label="Product" col="col-md-3"
-                          placeholder="All Products"
-                          :options="$products->mapWithKeys(fn ($p) => [$p->id => $p->name . ' (' . $p->sku . ')'])" />
-
-        <x-filters.select name="type" label="Type" col="col-md-2" placeholder="All Types"
-                          :options="[
-                            App\Models\InventoryTransaction::TYPE_IN  => 'Stock In',
-                            App\Models\InventoryTransaction::TYPE_OUT => 'Stock Out',
-                            App\Models\InventoryTransaction::TYPE_ADJUSTMENT => 'Adjustment',
-                          ]" />
-
-        <x-filters.select name="user_id" label="Recorded by" col="col-md-2"
-                          placeholder="Anyone" :options="$users->pluck('name', 'id')" />
-
-        <x-filters.text name="reference" label="Reference" col="col-md-2"
-                        placeholder="Note, invoice or PO..." />
-
-        <x-filters.date-range label="Moved between" col="col-md-3"
-                              fromName="date_from" toName="date_to" />
-    </x-filters.bar>
+    {{-- ===== Filter Panel (Part 3: product / type / date range) ===== --}}
+    <div class="card shadow-hover mb-4">
+        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Filter Transactions</h5>
+            <a href="{{ route('transactions.index') }}" class="btn btn-outline-light btn-sm">Reset filters</a>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ route('transactions.index') }}" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Product</label>
+                    <select name="product_id" class="form-select">
+                        <option value="">All Products</option>
+                        @foreach($products as $product)
+                            <option value="{{ $product->id }}" @selected(request('product_id') == $product->id)>
+                                {{ $product->name }} ({{ $product->sku }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Type</label>
+                    <select name="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="in" @selected(request('type') === 'in')>Stock In</option>
+                        <option value="out" @selected(request('type') === 'out')>Stock Out</option>
+                        <option value="return" @selected(request('type') === 'return')>Return</option>
+                        <option value="damage" @selected(request('type') === 'damage')>Damage</option>
+                        <option value="adjustment" @selected(request('type') === 'adjustment')>Adjustment</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">From</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">To</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary w-100" type="submit">
+                        <i class="bi bi-funnel me-1"></i> Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     {{-- ===== Transaction table ===== --}}
     <div class="card shadow-hover mb-4">
@@ -57,7 +81,8 @@
                             <th>Date / Time</th>
                             <th>Product</th>
                             <th>Type</th>
-                            <th class="text-end">Quantity</th>
+                            <th class="text-end pe-4">Quantity</th>
+                            <th class="ps-4">Before → After</th>
                             <th class="ps-4">Reference Number</th>
                             <th>User</th>
                             <th class="text-center">Actions</th>
@@ -80,9 +105,10 @@
                                     @endif
                                 </td>
                                 <td><span class="badge {{ $transaction->typeBadgeClass() }}">{{ $transaction->typeLabel() }}</span></td>
-                                <td class="text-end fw-bold {{ $transaction->signedQuantity() >= 0 ? 'text-success' : 'text-danger' }}">
+                                <td class="text-end pe-4 fw-bold {{ $transaction->signedQuantity() >= 0 ? 'text-success' : 'text-danger' }}">
                                     {{ $transaction->signedQuantity() >= 0 ? '+' : '' }}{{ $transaction->signedQuantity() }}
                                 </td>
+                                <td class="ps-4 text-nowrap">{{ $transaction->quantity_before ?? '—' }} → {{ $transaction->quantity_after ?? '—' }}</td>
                                 <td class="ps-4 text-nowrap"><code>{{ $transaction->reference_number ?: 'n/a' }}</code></td>
                                 <td>{{ $transaction->user?->name ?? 'system' }}</td>
                                 <td class="text-center text-nowrap">
@@ -115,7 +141,7 @@
         </div>
     </div>
 
-    @if (Auth::user()->is_admin)
+    @if (Auth::user()->canManageStock())
         @include('partials.adjustment-modal')
     @endif
 

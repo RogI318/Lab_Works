@@ -45,8 +45,8 @@
                             </span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end shadow" style="min-width: 340px;">
-                            <h6 class="dropdown-header"><i class="bi bi-exclamation-triangle me-1"></i>Low stock alerts ({{ $unreadCount }} unread)</h6>
-                            <div style="max-height: 320px; overflow-y: auto;">
+                            <h6 id="notifHeader" class="dropdown-header"><i class="bi bi-exclamation-triangle me-1"></i>Inventory alerts ({{ $unreadCount }} unread)</h6>
+                            <div id="notifList" style="max-height: 320px; overflow-y: auto;">
                             @forelse ($recentAlerts as $alert)
                                 @php
                                     $isOut    = (int) ($alert->data['quantity'] ?? 1) <= 0;
@@ -116,16 +116,28 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
+                            <a class="nav-link {{ request()->routeIs('products.index', 'products.show', 'products.create', 'products.edit') ? 'active' : '' }}"
                                href="{{ route('products.index') }}">
                                 Products
                             </a>
                         </li>
+                        @if ($navUser->canManageStock())
+                            <li class="nav-item"><a class="nav-link {{ request()->routeIs('products.trash') ? 'active' : '' }}" href="{{ route('products.trash') }}">Product Trash</a></li>
+                        @endif
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}"
                                href="{{ route('transactions.index') }}">
                                 Transactions
                             </a>
+                        </li>
+                        @if ($navUser->canManageStock())
+                            @php($viewedOrder = request()->route('order'))
+                            <li class="nav-item"><a class="nav-link {{ request()->routeIs('purchase-orders.*') || (request()->routeIs('orders.show') && $viewedOrder?->direction === 'purchase') || (request()->routeIs('orders.create') && request('direction') === 'purchase') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}">Purchase Orders</a></li>
+                            <li class="nav-item"><a class="nav-link {{ request()->routeIs('sales-orders.*') || (request()->routeIs('orders.show') && $viewedOrder?->direction === 'sale') || (request()->routeIs('orders.create') && request('direction') === 'sale') ? 'active' : '' }}" href="{{ route('sales-orders.index') }}">Sales Orders</a></li>
+                        @endif
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('procurement.*') ? 'active' : '' }}"
+                               href="{{ route('procurement.dashboard') }}">Procurement</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}"
@@ -139,44 +151,15 @@
                                 Categories
                             </a>
                         </li>
+                        @if ($navUser->canManageStock())
+                            <li class="nav-item"><a class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}" href="{{ route('suppliers.index') }}">Suppliers</a></li>
+                        @endif
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
                                href="{{ route('reports.index') }}">
                                 Reports
                             </a>
                         </li>
-                        {{-- Lab 7 Part 1 Step 6: the procurement group. More links
-                             join it in later Parts; the Gate keeps staff out. --}}
-                        @can('view-procurement')
-                            <li class="nav-item mt-3">
-                                <span class="nav-link disabled small fw-bold text-uppercase opacity-75">Procurement</span>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link ps-4 {{ request()->routeIs('suppliers.*') ? 'active' : '' }}"
-                                   href="{{ route('suppliers.index') }}">
-                                    Suppliers
-                                </a>
-                            </li>
-                            {{-- Lab 7 Part 2 Step 6 --}}
-                            <li class="nav-item">
-                                <a class="nav-link ps-4 {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}"
-                                   href="{{ route('purchase-orders.index') }}">
-                                    Purchase Orders
-                                </a>
-                            </li>
-                            {{-- Lab 7 Part 6 Step 2: its own gate inside the
-                                 procurement group — warehouse staff run the
-                                 orders, they do not score the vendors. --}}
-                            @can('view-supplier-reports')
-                                <li class="nav-item">
-                                    <a class="nav-link ps-4 {{ request()->routeIs('reports.supplier-performance') ? 'active' : '' }}"
-                                       href="{{ route('reports.supplier-performance') }}">
-                                        Supplier Performance
-                                    </a>
-                                </li>
-                            @endcan
-                        @endcan
-
                         {{-- Lab 5 (latest): admins maintain accounts here, since registration is closed. --}}
                         @if ($navUser->is_admin)
                             <li class="nav-item">
@@ -185,6 +168,7 @@
                                     Users
                                 </a>
                             </li>
+                            <li class="nav-item"><a class="nav-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">Audit Log</a></li>
                         @endif
                         <li class="nav-item mt-2">
                             <form method="POST" action="{{ route('logout') }}">
@@ -225,6 +209,27 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.querySelectorAll('.toast').forEach(el => new bootstrap.Toast(el, { delay: 5000 }).show());
+    </script>
+    <script>
+        (() => {
+            const badge = document.getElementById('notifBadge');
+            const list = document.getElementById('notifList');
+            const header = document.getElementById('notifHeader');
+            if (!badge || !list) return;
+            const refresh = async () => {
+                try {
+                    const response = await fetch(@json(route('notifications.latest')), { headers: { 'Accept': 'application/json' } });
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    badge.textContent = data.unread > 9 ? '9+' : data.unread;
+                    badge.classList.toggle('d-none', data.unread === 0);
+                    header.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>Inventory alerts (${data.unread} unread)`;
+                    list.innerHTML = data.notifications.length ? data.notifications.map(n => `<a class="dropdown-item text-wrap ${n.unread ? 'fw-semibold' : 'text-muted'}" href="${n.url}" style="border-left:5px solid ${Number(n.quantity) <= 0 ? '#dc3545' : '#ffc107'}"><i class="bi bi-exclamation-triangle-fill me-1"></i>${escapeHtml(n.subject)}${n.unread ? ' <span class="badge bg-danger ms-1">New</span>' : ''}<small class="text-muted d-block">${escapeHtml(n.created)}</small></a>`).join('') : '<p class="dropdown-item text-muted small mb-0">No alerts yet.</p>';
+                } catch (_) {}
+            };
+            const escapeHtml = value => { const el = document.createElement('span'); el.textContent = value ?? ''; return el.innerHTML; };
+            window.setInterval(refresh, 5000);
+        })();
     </script>
     @stack('scripts')
 </body>
